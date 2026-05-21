@@ -101,6 +101,9 @@ export default function SchedulePage() {
                   📐 Ngữ pháp ({sessionGrammar[s.session].length})
                 </Link>
               )}
+              <Link href={`/upload?session=${s.session}`} className="mt-2 ml-2 inline-block text-xs px-3 py-1 bg-gray-100 text-gray-500 rounded-lg font-medium hover:bg-gray-200">
+                ➕ Thêm
+              </Link>
             </div>
           );
         })}

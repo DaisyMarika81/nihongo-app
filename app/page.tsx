@@ -121,6 +121,9 @@ export default function Home() {
       <Link href="/tips" className="block text-center text-sm text-gray-400 hover:text-gray-600 py-2">
         💡 Mẹo học tập
       </Link>
+      <Link href="/upload" className="block text-center text-sm text-gray-400 hover:text-gray-600 py-2">
+        📤 Upload từ vựng
+      </Link>
     </main>
   );
 }

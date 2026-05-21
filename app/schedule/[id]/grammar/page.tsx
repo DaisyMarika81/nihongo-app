@@ -1,5 +1,6 @@
 'use client';
 
+import { useState, useEffect } from 'react';
 import { useParams } from 'next/navigation';
 import { sessionGrammar } from '@/data/session-grammar';
 import { speak } from '@/lib/speak';
@@ -7,7 +8,23 @@ import { speak } from '@/lib/speak';
 export default function SessionGrammarPage() {
   const { id } = useParams();
   const sessionId = parseInt(id as string);
-  const items = sessionGrammar[sessionId] || [];
+  const baseItems = sessionGrammar[sessionId] || [];
+  const [items, setItems] = useState(baseItems);
+
+  useEffect(() => {
+    const custom = localStorage.getItem(`nihongo_custom_grammar_${sessionId}`);
+    if (custom) {
+      const data = JSON.parse(custom);
+      if (data.items) {
+        const mapped = data.items.map((g: { pattern: string; meaning: string; example: string; exampleRomaji?: string; exampleMeaning: string; note?: string }, i: number) => ({
+          id: `custom-${sessionId}-${i}`,
+          ...g,
+          exampleRomaji: g.exampleRomaji || '',
+        }));
+        setItems([...baseItems, ...mapped]);
+      }
+    }
+  }, [sessionId]);
 
   if (!items.length) {
     return (

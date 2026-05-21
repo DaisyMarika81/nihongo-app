@@ -19,8 +19,18 @@ type Mode = 'flashcard' | 'quiz' | 'unknown';
 export default function SessionFlashCard() {
   const { id } = useParams();
   const sessionId = parseInt(id as string);
-  const cards = sessionCards[sessionId] || [];
+  const baseCards = sessionCards[sessionId] || [];
   const STORAGE_KEY = `nihongo_session${sessionId}_state`;
+
+  // Merge with custom uploaded cards
+  const [cards, setCards] = useState(baseCards);
+  useEffect(() => {
+    const custom = localStorage.getItem(`nihongo_custom_flashcard_${sessionId}`);
+    if (custom) {
+      const data = JSON.parse(custom);
+      if (data.cards) setCards([...baseCards, ...data.cards]);
+    }
+  }, [sessionId]);
 
   const [mode, setMode] = useState<Mode>('flashcard');
   const [index, setIndex] = useState(0);
