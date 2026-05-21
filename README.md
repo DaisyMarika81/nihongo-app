@@ -1,36 +1,100 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
+# 🇯🇵 Nihongo App — Học tiếng Nhật (Minna no Nihongo)
+
+Web app học tiếng Nhật theo giáo trình Minna no Nihongo (50 bài), với SRS flashcard, quiz, và daily session 1h/ngày.
+
+**Live:** Deploy miễn phí trên Vercel
+
+## Features
+
+- 📖 **50 bài học** từ vựng + ngữ pháp Minna no Nihongo I & II
+- 🔤 **Bảng Kana** đầy đủ Hiragana + Katakana (208 ký tự)
+- 📇 **Flashcard SRS** — Spaced Repetition (thuật toán SM-2)
+- ✍️ **Quiz** — 3 chế độ: Kana, Từ vựng, Ngữ pháp
+- ⏱️ **Daily Session** — Lập kế hoạch học 60 phút/ngày
+- 🔥 **Streak tracking** — Theo dõi chuỗi ngày học liên tục
+- 💾 **Offline-first** — Data lưu localStorage, không cần đăng nhập
+- 📤 **Export/Import** — Backup tiến trình dạng JSON
+
+## Tech Stack
+
+- **Next.js 16** (App Router)
+- **TypeScript**
+- **Tailwind CSS**
+- **localStorage** (no backend needed)
+- **Vercel** (deploy)
+
+## Data
+
+| Nguồn | Nội dung |
+|--------|----------|
+| Hiragana | 104 ký tự (cơ bản + dakuten + combo) |
+| Katakana | 104 ký tự |
+| Từ vựng | ~800 từ (50 bài × ~16 từ/bài) |
+| Ngữ pháp | 100 mẫu câu (2/bài) |
 
 ## Getting Started
 
-First, run the development server:
-
 ```bash
+# Install
+npm install
+
+# Dev
 npm run dev
-# or
-yarn dev
-# or
-pnpm dev
-# or
-bun dev
+
+# Build
+npm run build
+
+# Start
+npm start
 ```
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+Mở http://localhost:3000
 
-You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
+## Deploy lên Vercel
 
-This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
+1. Push code lên GitHub
+2. Vào [vercel.com](https://vercel.com) → Import repository
+3. Click Deploy — xong!
 
-## Learn More
+Hoặc dùng CLI:
+```bash
+npm i -g vercel
+vercel
+```
 
-To learn more about Next.js, take a look at the following resources:
+## Cấu trúc project
 
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
+```
+nihongo-app/
+├── app/
+│   ├── page.tsx              # Dashboard
+│   ├── flashcard/page.tsx    # SRS Flashcard
+│   ├── quiz/page.tsx         # Quiz (3 modes)
+│   ├── lessons/page.tsx      # Danh sách 50 bài
+│   ├── lessons/[id]/page.tsx # Chi tiết bài học
+│   ├── kana/page.tsx         # Bảng Hiragana/Katakana
+│   ├── settings/page.tsx     # Cài đặt & backup
+│   └── components/           # UI components
+├── data/
+│   ├── hiragana.ts           # Bảng Hiragana
+│   ├── katakana.ts           # Bảng Katakana
+│   ├── grammar.ts            # Ngữ pháp 50 bài
+│   └── vocabulary/           # Từ vựng theo bài
+├── lib/
+│   ├── srs.ts                # SRS engine (SM-2)
+│   ├── session.ts            # Daily session planner
+│   └── store.ts              # Progress (localStorage)
+└── package.json
+```
 
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
+## Cách sử dụng
 
-## Deploy on Vercel
+1. **Bắt đầu:** Mở app → Dashboard hiển thị phiên học hôm nay
+2. **Học bài mới:** Lessons → chọn bài → đọc từ vựng + ngữ pháp → click "Learn"
+3. **Ôn tập:** Flashcard → lật thẻ → đánh giá (Again/Hard/Good/Easy)
+4. **Kiểm tra:** Quiz → chọn mode → trả lời 10 câu
+5. **Kana:** Học bảng chữ cái → đánh dấu đã thuộc
 
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
+## License
 
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+MIT
