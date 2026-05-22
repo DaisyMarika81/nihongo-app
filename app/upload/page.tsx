@@ -40,14 +40,19 @@ function UploadContent() {
   function handleUpload() {
     try {
       const data = JSON.parse(json);
-      if (!data.session || !data.type) throw new Error('Cần có "session" và "type"');
+      if (!data.session || !data.type) throw new Error('Cần có "session" và "type" (flashcard/grammar/kanji)');
 
-      const key = data.type === 'flashcard'
-        ? `nihongo_custom_flashcard_${data.session}`
-        : `nihongo_custom_grammar_${data.session}`;
+      const keyMap: Record<string, string> = {
+        flashcard: `nihongo_custom_flashcard_${data.session}`,
+        grammar: `nihongo_custom_grammar_${data.session}`,
+        kanji: `nihongo_custom_kanji_${data.session}`,
+      };
+      const key = keyMap[data.type];
+      if (!key) throw new Error('type phải là: flashcard, grammar, hoặc kanji');
 
       localStorage.setItem(key, JSON.stringify(data));
-      setStatus({ type: 'success', msg: `✅ Đã lưu ${data.type} buổi ${data.session} (${data.type === 'flashcard' ? data.cards?.length : data.items?.length} mục)` });
+      const count = data.cards?.length || data.items?.length || 0;
+      setStatus({ type: 'success', msg: `✅ Đã lưu ${data.type} buổi ${data.session} (${count} mục)` });
     } catch (e: unknown) {
       setStatus({ type: 'error', msg: `❌ Lỗi: ${(e as Error).message}` });
     }

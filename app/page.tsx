@@ -101,6 +101,12 @@ export default function Home() {
         <Link href="/flashcard" className="bg-gradient-to-r from-sky-400 to-blue-500 text-white font-semibold py-4 rounded-2xl text-center shadow-md hover:shadow-lg transition-all hover:scale-[1.02]">
           📇 Ôn tập
         </Link>
+        <Link href="/review" className="bg-gradient-to-r from-rose-400 to-pink-500 text-white font-semibold py-4 rounded-2xl text-center shadow-md hover:shadow-lg transition-all hover:scale-[1.02]">
+          🈁 Ôn Kanji
+        </Link>
+      </div>
+
+      <div className="grid grid-cols-2 gap-3">
         <Link href="/lessons" className="bg-gradient-to-r from-emerald-400 to-teal-500 text-white font-semibold py-4 rounded-2xl text-center shadow-md hover:shadow-lg transition-all hover:scale-[1.02]">
           📖 Bài học
         </Link>

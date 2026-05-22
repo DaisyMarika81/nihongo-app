@@ -4,6 +4,7 @@ import { useState, useEffect } from 'react';
 import Link from 'next/link';
 import { sessionCards } from '@/data/session-cards';
 import { sessionGrammar } from '@/data/session-grammar';
+import { sessionKanji } from '@/data/session-kanji';
 
 const NOTES_KEY = 'nihongo_schedule_notes';
 
@@ -99,6 +100,11 @@ export default function SchedulePage() {
               {sessionGrammar[s.session] && (
                 <Link href={`/schedule/${s.session}/grammar`} className="mt-2 ml-2 inline-block text-xs px-3 py-1 bg-violet-100 text-violet-600 rounded-lg font-medium hover:bg-violet-200">
                   📐 Ngữ pháp ({sessionGrammar[s.session].length})
+                </Link>
+              )}
+              {sessionKanji[s.session] && (
+                <Link href={`/schedule/${s.session}/kanji-fc`} className="mt-2 ml-2 inline-block text-xs px-3 py-1 bg-rose-100 text-rose-600 rounded-lg font-medium hover:bg-rose-200">
+                  🈁 Kanji ({sessionKanji[s.session].length})
                 </Link>
               )}
               <Link href={`/upload?session=${s.session}`} className="mt-2 ml-2 inline-block text-xs px-3 py-1 bg-gray-100 text-gray-500 rounded-lg font-medium hover:bg-gray-200">
