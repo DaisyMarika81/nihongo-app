@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState } from 'react';
 import { sessionKanji, SessionKanjiEntry } from '@/data/session-kanji';
 
 function shuffle<T>(arr: T[]): T[] { return [...arr].sort(() => Math.random() - 0.5); }
@@ -59,19 +59,64 @@ export default function JLPTQuizPage() {
   const [idx, setIdx] = useState(0);
   const [selected, setSelected] = useState<number | null>(null);
   const [score, setScore] = useState(0);
+  const [started, setStarted] = useState(false);
+  const [mounted, setMounted] = useState(false);
 
-  useEffect(() => {
-    const allKanji = Object.values(sessionKanji).flat();
-    // Also load custom uploaded kanji
+  useState(() => { if (typeof window !== 'undefined') setMounted(true); });
+
+  function getAllKanji(): SessionKanjiEntry[] {
+    const all = Object.values(sessionKanji).flat();
+    if (typeof window === 'undefined') return all;
     const customKeys = Object.keys(localStorage).filter((k) => k.startsWith('nihongo_custom_kanji_'));
     customKeys.forEach((key) => {
-      try {
-        const data = JSON.parse(localStorage.getItem(key) || '');
-        if (data.cards) allKanji.push(...data.cards);
-      } catch {}
+      try { const data = JSON.parse(localStorage.getItem(key) || ''); if (data.cards) all.push(...data.cards); } catch {}
     });
-    setQuestions(generateJLPTQuestions(allKanji, 35));
-  }, []);
+    return all;
+  }
+
+  function getSessionKanji(session: number): SessionKanjiEntry[] {
+    const base = sessionKanji[session] || [];
+    if (typeof window === 'undefined') return base;
+    try { const custom = localStorage.getItem(`nihongo_custom_kanji_${session}`); if (custom) { const data = JSON.parse(custom); if (data.cards) return [...base, ...data.cards]; } } catch {}
+    return base;
+  }
+
+  function startQuiz(kanjiData: SessionKanjiEntry[]) {
+    setQuestions(generateJLPTQuestions(kanjiData, 35));
+    setIdx(0); setScore(0); setSelected(null); setStarted(true);
+  }
+
+  // Session selector
+  if (!started) {
+    if (!mounted) return null;
+    const sessions = [...new Set([...Object.keys(sessionKanji).map(Number), ...Object.keys(localStorage).filter((k) => k.startsWith('nihongo_custom_kanji_')).map((k) => parseInt(k.replace('nihongo_custom_kanji_', '')))])].sort((a, b) => a - b);
+
+    return (
+      <div className="min-h-screen p-4 pb-24">
+        <h1 className="text-2xl font-bold text-gray-800 mb-2">📝 JLPT Kanji Quiz</h1>
+        <p className="text-sm text-gray-500 mb-6">Chọn buổi hoặc thi tổng hợp</p>
+
+        <button onClick={() => startQuiz(getAllKanji())}
+          className="w-full py-4 mb-6 bg-gradient-to-r from-indigo-500 to-purple-500 text-white rounded-2xl font-bold text-lg shadow-md hover:shadow-lg transition-all">
+          🎲 Tổng hợp tất cả ({getAllKanji().length} kanji)
+        </button>
+
+        <div className="space-y-2">
+          {sessions.map((s) => {
+            const data = getSessionKanji(s);
+            if (!data.length) return null;
+            return (
+              <button key={s} onClick={() => startQuiz(data)}
+                className="w-full flex items-center justify-between bg-white rounded-xl p-4 shadow-sm border border-gray-100 hover:border-indigo-300 transition-all">
+                <span className="font-medium text-gray-800">Buổi {s}</span>
+                <span className="text-sm text-gray-400">{data.length} kanji</span>
+              </button>
+            );
+          })}
+        </div>
+      </div>
+    );
+  }
 
   function handleSelect(i: number) {
     if (selected !== null) return;
@@ -95,6 +140,7 @@ export default function JLPTQuizPage() {
         <p className="text-sm text-gray-500 mt-1">{Math.round((score / questions.length) * 100)}% đúng</p>
         <div className="flex gap-3 mt-6">
           <button onClick={() => { setIdx(0); setScore(0); setQuestions(shuffle(questions)); }} className="px-5 py-3 bg-indigo-500 text-white rounded-xl font-medium shadow">🔄 Làm lại</button>
+          <button onClick={() => setStarted(false)} className="px-5 py-3 bg-gray-200 rounded-xl font-medium">← Chọn buổi khác</button>
         </div>
       </div>
     );
