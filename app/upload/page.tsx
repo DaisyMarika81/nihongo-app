@@ -58,9 +58,13 @@ function UploadContent() {
     }
   }
 
-  function loadExample(type: 'flashcard' | 'grammar') {
-    const tmpl = type === 'flashcard' ? EXAMPLE_FLASHCARD : EXAMPLE_GRAMMAR;
-    setJson(tmpl.replace(/SESSION_NUM/g, sessionFromUrl));
+  function loadExample(type: 'flashcard' | 'grammar' | 'kanji') {
+    const templates: Record<string, string> = {
+      flashcard: EXAMPLE_FLASHCARD,
+      grammar: EXAMPLE_GRAMMAR,
+      kanji: `{\n  "session": ${sessionFromUrl},\n  "type": "kanji",\n  "cards": [\n    {\n      "kanji": "任",\n      "hanViet": "NHIỆM",\n      "meaning": "Giao phó",\n      "onyomi": "ニン",\n      "kunyomi": "まか(せる)",\n      "vocab": [\n        { "word": "責任", "reading": "せきにん", "meaning": "Trách nhiệm" },\n        { "word": "担任の先生", "reading": "たんにんのせんせい", "meaning": "Giáo viên chủ nhiệm" }\n      ]\n    }\n  ]\n}`,
+    };
+    setJson(templates[type].replace(/SESSION_NUM/g, sessionFromUrl));
     setStatus(null);
   }
 
@@ -72,6 +76,7 @@ function UploadContent() {
       <div className="flex gap-2 mb-4">
         <button onClick={() => loadExample('flashcard')} className="text-xs px-3 py-1.5 bg-indigo-100 text-indigo-600 rounded-lg font-medium">📋 Mẫu Flashcard</button>
         <button onClick={() => loadExample('grammar')} className="text-xs px-3 py-1.5 bg-violet-100 text-violet-600 rounded-lg font-medium">📋 Mẫu Ngữ pháp</button>
+        <button onClick={() => loadExample('kanji')} className="text-xs px-3 py-1.5 bg-rose-100 text-rose-600 rounded-lg font-medium">📋 Mẫu Kanji</button>
       </div>
 
       <textarea
