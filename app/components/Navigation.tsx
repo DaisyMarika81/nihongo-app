@@ -6,7 +6,7 @@ import { useTheme } from '@/lib/theme';
 
 const tabs = [
   { href: '/', label: 'Home', icon: '🏠' },
-  { href: '/lessons', label: 'Bài học', icon: '📚' },
+  { href: '/schedule', label: 'Lịch học', icon: '📅' },
   { href: '/kanji', label: 'Kanji', icon: '🈁' },
   { href: '/practice', label: 'Luyện', icon: '🎯' },
   { href: '/quiz', label: 'Quiz', icon: '✍️' },

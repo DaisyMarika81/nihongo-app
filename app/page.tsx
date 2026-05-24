@@ -110,12 +110,12 @@ export default function Home() {
         <Link href="/lessons" className="bg-gradient-to-r from-emerald-400 to-teal-500 text-white font-semibold py-4 rounded-2xl text-center shadow-md hover:shadow-lg transition-all hover:scale-[1.02]">
           📖 Bài học
         </Link>
-      </div>
-
-      <div className="grid grid-cols-2 gap-3">
         <Link href="/kana" className="bg-gradient-to-r from-purple-400 to-fuchsia-500 text-white font-semibold py-4 rounded-2xl text-center shadow-md hover:shadow-lg transition-all hover:scale-[1.02]">
           🔤 Kana
         </Link>
+      </div>
+
+      <div className="grid grid-cols-2 gap-3">
         <Link href="/schedule" className="bg-gradient-to-r from-amber-400 to-orange-500 text-white font-semibold py-4 rounded-2xl text-center shadow-md hover:shadow-lg transition-all hover:scale-[1.02]">
           📅 Lịch học
         </Link>
