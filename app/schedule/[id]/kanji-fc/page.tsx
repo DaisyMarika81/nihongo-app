@@ -299,6 +299,7 @@ export default function SessionKanjiPage() {
                   <div key={i} className="flex items-center gap-2.5 rounded-lg p-2.5" style={{ background: 'rgba(255,255,255,0.08)' }}>
                     <span className="w-6 h-6 rounded-full bg-white/15 flex items-center justify-center text-[10px] font-bold text-white/70 shrink-0">{i + 1}</span>
                     <div className="flex-1 min-w-0">
+                      {v.reading && <div className="text-[10px] text-white/50 leading-none mb-0.5" dangerouslySetInnerHTML={{ __html: v.highlightReading ? v.reading.replace(new RegExp(`(${v.highlightReading})`, 'g'), '<span class="text-amber-300">$1</span>') : v.reading }} />}
                       <div className="text-[15px] font-bold text-white" dangerouslySetInnerHTML={{ __html: v.word.replace(new RegExp(`(${v.highlight || card.kanji})`, 'g'), '<span class="text-amber-300">$1</span>') }} />
                       <div className="text-xs text-white/60" dangerouslySetInnerHTML={{ __html: v.highlightMeaning ? v.meaning.replace(new RegExp(`(${v.highlightMeaning})`, 'gi'), '<span class="text-amber-300">$1</span>') : v.meaning }} />
                     </div>
