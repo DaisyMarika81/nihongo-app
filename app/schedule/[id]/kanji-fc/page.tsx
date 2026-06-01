@@ -69,6 +69,7 @@ export default function SessionKanjiPage() {
     }, 300);
   }
 
+  const [isShuffled, setIsShuffled] = useState(false);
   const [managing, setManaging] = useState(false);
   const [editingMnemonic, setEditingMnemonic] = useState(false);
   const [mnemonicText, setMnemonicText] = useState('');
@@ -248,8 +249,9 @@ export default function SessionKanjiPage() {
       <div className="w-full max-w-sm mb-1">
         <div className="flex items-center justify-between text-xs text-gray-500 mb-1">
           <span>Còn {remaining}/{cards.length}</span>
-          <div className="flex gap-3">
-            <button onClick={() => { const shuffled = [...cards]; for (let i = shuffled.length - 1; i > 0; i--) { const j = Math.floor(Math.random() * (i + 1)); [shuffled[i], shuffled[j]] = [shuffled[j], shuffled[i]]; } setCards(shuffled); setIndex(0); setFlipped(false); setDone(new Set()); setUnknown(new Set()); }} className="text-gray-400 hover:text-indigo-500">🔀 Trộn</button>
+          <div className="flex gap-3 items-center">
+            {isShuffled && <span className="text-[10px] px-1.5 py-0.5 rounded-full font-medium" style={{ background: '#6C63FF', color: 'white' }}>🔀 Đang trộn</span>}
+            <button onClick={() => { const shuffled = [...cards]; for (let i = shuffled.length - 1; i > 0; i--) { const j = Math.floor(Math.random() * (i + 1)); [shuffled[i], shuffled[j]] = [shuffled[j], shuffled[i]]; } setCards(shuffled); setIndex(0); setFlipped(false); setDone(new Set()); setUnknown(new Set()); setIsShuffled(true); }} className={isShuffled ? 'text-indigo-400' : 'text-gray-400 hover:text-indigo-500'}>🔀 Trộn</button>
             <button onClick={() => setManaging(true)} className="text-gray-400 hover:text-red-500">🗑️ Quản lý</button>
           </div>
         </div>
