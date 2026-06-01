@@ -312,14 +312,8 @@ export default function SessionKanjiPage() {
         </div>
       </div>
       <div className="flex gap-3">
-        {flipped ? (
-          <>
-            <button onClick={() => next(false)} className="px-6 py-3 rounded-xl bg-red-500/80 text-white font-medium shadow">← Chưa thuộc</button>
-            <button onClick={() => next(true)} className="px-6 py-3 rounded-xl text-white font-medium shadow" style={{ background: '#22C55E' }}>Đã thuộc ✓ →</button>
-          </>
-        ) : (
-          <button onClick={() => setFlipped(true)} className="px-8 py-3 rounded-xl text-white font-medium shadow" style={{ background: '#6C63FF' }}>Lật thẻ <span className="text-xs opacity-60 ml-1">[Space]</span></button>
-        )}
+        <button onClick={() => next(false)} className="px-6 py-3 rounded-xl bg-red-500/80 text-white font-medium shadow">← Chưa thuộc</button>
+        <button onClick={() => next(true)} className="px-6 py-3 rounded-xl text-white font-medium shadow" style={{ background: '#22C55E' }}>Đã thuộc ✓ →</button>
       </div>
 
       <div className="mt-4 w-full max-w-sm">
