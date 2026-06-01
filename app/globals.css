@@ -14,7 +14,7 @@ body {
   font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
   -webkit-font-smoothing: antialiased;
   overflow-x: hidden;
-  font-size: 18px;
+  font-size: 20px;
 }
 
 /* Bump all fixed text sizes +2px */
