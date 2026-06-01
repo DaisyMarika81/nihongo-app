@@ -5,6 +5,7 @@ import Link from 'next/link';
 import { sessionCards } from '@/data/session-cards';
 import { sessionGrammar } from '@/data/session-grammar';
 import { sessionKanji } from '@/data/session-kanji';
+import { getAllSessionData } from '@/lib/session-data';
 
 const NOTES_KEY = 'nihongo_schedule_notes';
 
@@ -41,78 +42,109 @@ function getStatus(date: string): 'past' | 'today' | 'future' {
 
 export default function SchedulePage() {
   const [notes, setNotes] = useState<Record<number, string>>({});
+  const [cloudData, setCloudData] = useState<{ session_num: number; type: string; count: number }[]>([]);
 
   useEffect(() => {
     const raw = localStorage.getItem(NOTES_KEY);
     if (raw) setNotes(JSON.parse(raw));
+    getAllSessionData().then(setCloudData);
   }, []);
+
+  function hasCloud(session: number, type: string) {
+    return cloudData.some(d => d.session_num === session && d.type === type);
+  }
+
+  function cloudCount(session: number, type: string) {
+    return cloudData.find(d => d.session_num === session && d.type === type)?.count || 0;
+  }
+
+  const completed = schedule.filter(s => getStatus(s.date) === 'past').length;
+  const pct = Math.round((completed / schedule.length) * 100);
 
   return (
     <div className="min-h-screen p-4 pb-24">
-      <h1 className="text-2xl font-bold text-gray-800 mb-2">📅 Lịch học</h1>
-      <p className="text-sm text-gray-500 mb-4">45 buổi • 3 buổi/tuần (T2, T4, T6)</p>
+      <div className="max-w-2xl mx-auto">
+        <h1 className="text-2xl font-bold text-gray-800 mb-1">📅 Lịch học</h1>
+        <p className="text-sm text-gray-500 mb-3">45 buổi • 3 buổi/tuần (T3, T5, T7)</p>
 
-      <div className="space-y-2">
-        {schedule.map((s) => {
-          const { display, day } = formatDate(s.date);
-          const status = getStatus(s.date);
-          const note = notes[s.session] || '';
+        {/* Progress bar - thick & green gradient */}
+        <div className="mb-6">
+          <div className="flex items-center justify-between text-xs text-gray-500 mb-1.5">
+            <span className="font-medium">{completed} / {schedule.length} hoàn thành</span>
+            <span className="font-bold" style={{ color: '#22C55E' }}>{pct}%</span>
+          </div>
+          <div className="w-full h-3 bg-gray-200 rounded-full overflow-hidden">
+            <div className="h-full rounded-full transition-all" style={{ width: `${pct}%`, background: 'linear-gradient(90deg, #22C55E, #16A34A)' }} />
+          </div>
+        </div>
 
-          return (
-            <div key={s.session}
-              className={`rounded-xl p-4 border transition-all ${
-                status === 'today' ? 'bg-indigo-50 border-indigo-300 ring-2 ring-indigo-200' :
-                status === 'past' ? 'bg-gray-50 border-gray-200 opacity-70' :
-                'bg-white border-gray-100 shadow-sm'
-              }`}>
-              <div className="flex items-center justify-between">
-                <div className="flex items-center gap-3">
-                  <div className={`w-10 h-10 rounded-lg flex items-center justify-center font-bold text-sm ${
-                    status === 'today' ? 'bg-indigo-500 text-white' :
-                    status === 'past' ? 'bg-gray-300 text-white' :
-                    'bg-gradient-to-br from-rose-400 to-pink-500 text-white'
-                  }`}>
-                    {s.session}
-                  </div>
-                  <div>
-                    <div className="font-medium text-gray-800 text-sm">
-                      Buổi {s.session}
-                      {status === 'today' && <span className="ml-2 text-xs bg-indigo-500 text-white px-2 py-0.5 rounded-full">Hôm nay</span>}
-                      {status === 'past' && <span className="ml-2 text-xs text-gray-400">✓</span>}
+        <div className="space-y-2.5">
+          {schedule.map((s) => {
+            const { display, day } = formatDate(s.date);
+            const status = getStatus(s.date);
+            const isToday = status === 'today';
+            const isPast = status === 'past';
+            const hasContent = sessionCards[s.session] || sessionGrammar[s.session] || sessionKanji[s.session] || hasCloud(s.session, 'flashcard') || hasCloud(s.session, 'grammar') || hasCloud(s.session, 'kanji');
+
+            return (
+              <div key={s.session}
+                className={`rounded-xl p-4 border-2 relative overflow-hidden transition-all ${
+                  isToday ? 'border-[rgba(108,99,255,0.5)] shadow-[0_0_24px_rgba(108,99,255,0.15)]' :
+                  isPast ? 'border-gray-200' :
+                  'border-gray-200'
+                } ${isPast && !hasContent ? 'opacity-50' : isPast ? 'opacity-65' : ''}`}>
+                {isToday && <div className="absolute left-0 top-0 bottom-0 w-1" style={{ background: '#6C63FF' }} />}
+
+                <div className="flex items-center justify-between">
+                  <div className="flex items-center gap-3">
+                    <div className={`w-9 h-9 rounded-full flex items-center justify-center font-bold text-xs ${
+                      isToday ? 'text-white' : isPast ? 'bg-gray-300 text-white' : 'bg-gray-200 text-gray-500'
+                    }`} style={isToday ? { background: '#6C63FF' } : isPast ? { background: '#22C55E' } : {}}>
+                      {s.session}
                     </div>
-                    <div className="text-xs text-gray-500">{day} • {display}</div>
+                    <div>
+                      <div className="flex items-center gap-2">
+                        <span className="font-semibold text-gray-800 text-[15px]">Buổi {s.session}</span>
+                        {isPast && <span className="text-[10px] px-1.5 py-0.5 rounded-full font-medium" style={{ background: 'rgba(34,197,94,0.1)', color: '#22C55E' }}>✓ Done</span>}
+                        {isToday && <span className="text-[10px] px-1.5 py-0.5 rounded-full font-medium border" style={{ background: 'rgba(108,99,255,0.12)', color: '#8B7CFF', borderColor: 'rgba(108,99,255,0.25)' }}>Hôm nay</span>}
+                      </div>
+                      <div className="text-[11px] text-gray-400">{day} • {display}</div>
+                    </div>
                   </div>
+                  <Link href={`/schedule/${s.session}`} className="text-[11px] text-indigo-400 hover:text-indigo-300 font-medium">📝 Note ›</Link>
                 </div>
-                <Link href={`/schedule/${s.session}`}
-                  className="text-xs px-2 py-1 text-gray-400 hover:text-indigo-500">
-                  {note ? '📝 Xem' : '+ Note'}
-                </Link>
-              </div>
 
-              {note && (
-                <p className="mt-2 text-xs text-indigo-500 italic pl-13 line-clamp-1" dangerouslySetInnerHTML={{ __html: note.replace(/<[^>]*>/g, ' ').slice(0, 80) }} />
-              )}
-              {sessionCards[s.session] && (
-                <Link href={`/schedule/${s.session}/flashcard`} className="mt-2 inline-block text-xs px-3 py-1 bg-indigo-100 text-indigo-600 rounded-lg font-medium hover:bg-indigo-200">
-                  🃏 Flashcard ({sessionCards[s.session].length} từ)
-                </Link>
-              )}
-              {sessionGrammar[s.session] && (
-                <Link href={`/schedule/${s.session}/grammar`} className="mt-2 ml-2 inline-block text-xs px-3 py-1 bg-violet-100 text-violet-600 rounded-lg font-medium hover:bg-violet-200">
-                  📐 Ngữ pháp ({sessionGrammar[s.session].length})
-                </Link>
-              )}
-              {sessionKanji[s.session] && (
-                <Link href={`/schedule/${s.session}/kanji-fc`} className="mt-2 ml-2 inline-block text-xs px-3 py-1 bg-rose-100 text-rose-600 rounded-lg font-medium hover:bg-rose-200">
-                  🈁 Kanji ({sessionKanji[s.session].length})
-                </Link>
-              )}
-              <Link href={`/upload?session=${s.session}`} className="mt-2 ml-2 inline-block text-xs px-3 py-1 bg-gray-100 text-gray-500 rounded-lg font-medium hover:bg-gray-200">
-                ➕ Thêm
-              </Link>
-            </div>
-          );
-        })}
+                {hasContent && (
+                  <div className="flex flex-wrap items-center gap-1.5 mt-2.5 pl-12">
+                    {(sessionCards[s.session] || hasCloud(s.session, 'flashcard')) && (
+                      <Link href={`/schedule/${s.session}/flashcard`} className="text-[10px] px-2 py-1 rounded-md font-medium text-white bg-indigo-500">
+                        🃏 Flashcard ({(sessionCards[s.session]?.length || 0) + cloudCount(s.session, 'flashcard')})
+                      </Link>
+                    )}
+                    {(sessionGrammar[s.session] || hasCloud(s.session, 'grammar')) && (
+                      <Link href={`/schedule/${s.session}/grammar`} className="text-[10px] px-2 py-1 rounded-md font-medium text-white bg-violet-500">
+                        📐 Ngữ pháp ({(sessionGrammar[s.session]?.length || 0) + cloudCount(s.session, 'grammar')})
+                      </Link>
+                    )}
+                    {(sessionKanji[s.session] || hasCloud(s.session, 'kanji')) && (
+                      <Link href={`/schedule/${s.session}/kanji-fc`} className="text-[10px] px-2 py-1 rounded-md font-medium text-white bg-rose-500">
+                        🈁 Kanji ({(sessionKanji[s.session]?.length || 0) + cloudCount(s.session, 'kanji')})
+                      </Link>
+                    )}
+                    <Link href={`/upload?session=${s.session}`} className="text-[10px] px-1.5 py-1 text-gray-400 hover:text-gray-600">➕</Link>
+                    <Link href={`/export?session=${s.session}`} className="text-[10px] px-1.5 py-1 text-gray-400 hover:text-gray-600">🖨️</Link>
+                  </div>
+                )}
+                {!hasContent && (
+                  <div className="flex items-center gap-1.5 mt-2.5 pl-12">
+                    <Link href={`/upload?session=${s.session}`} className="text-[10px] px-2 py-1 text-gray-400 hover:text-gray-600 bg-gray-100 rounded-md">➕ Thêm</Link>
+                    <Link href={`/export?session=${s.session}`} className="text-[10px] px-2 py-1 text-gray-400 hover:text-gray-600 bg-gray-100 rounded-md">🖨️ In</Link>
+                  </div>
+                )}
+              </div>
+            );
+          })}
+        </div>
       </div>
     </div>
   );

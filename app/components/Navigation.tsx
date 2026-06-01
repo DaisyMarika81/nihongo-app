@@ -7,8 +7,10 @@ import { useTheme } from '@/lib/theme';
 const tabs = [
   { href: '/', label: 'Home', icon: '🏠' },
   { href: '/schedule', label: 'Lịch học', icon: '📅' },
-  { href: '/kanji', label: 'Kanji', icon: '🈁' },
+  { href: '/review/jlpt', label: 'Luyện Kanji', icon: '🎯' },
   { href: '/practice', label: 'Luyện', icon: '🎯' },
+  { href: '/chat', label: 'AI', icon: '🤖' },
+  { href: '/kanji', label: 'Kanji', icon: '🈁' },
   { href: '/quiz', label: 'Quiz', icon: '✍️' },
 ];
 
@@ -17,7 +19,7 @@ export default function Navigation() {
   const { theme, toggle } = useTheme();
 
   return (
-    <nav className="fixed bottom-0 left-0 right-0 bg-white/90 backdrop-blur-md border-t border-gray-200 shadow-lg">
+    <nav className="fixed bottom-0 left-0 right-0 bg-white/95 backdrop-blur-md border-t border-gray-200 shadow-lg z-50">
       <div className="flex justify-around items-center h-16">
         {tabs.map((tab) => {
           const active = pathname === tab.href;

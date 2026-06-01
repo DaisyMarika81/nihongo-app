@@ -1,14 +1,18 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { sessionKanji, SessionKanjiEntry } from '@/data/session-kanji';
+import { getSessionData, getAllSessionData } from '@/lib/session-data';
 
 function shuffle<T>(arr: T[]): T[] { return [...arr].sort(() => Math.random() - 0.5); }
 
 type Question = {
   type: 'reading-to-kanji' | 'kanji-to-reading';
   sentence: string;
-  highlight: string; // the word being tested
+  highlight: string;
+  highlightMeaning?: string;
+  vocabHighlight?: string;
+  highlightReading?: string;
   correctAnswer: string;
   options: string[];
 };
@@ -32,6 +36,9 @@ function generateJLPTQuestions(kanjiData: SessionKanjiEntry[], count = 35): Ques
         type: 'reading-to-kanji',
         sentence: `${vocab.meaning}`,
         highlight: vocab.reading,
+        highlightMeaning: (vocab as { highlightMeaning?: string }).highlightMeaning,
+        highlightReading: (vocab as { highlightReading?: string }).highlightReading,
+        vocabHighlight: (vocab as { highlight?: string }).highlight || vocab.kanji,
         correctAnswer: vocab.word,
         options: shuffle([vocab.word, ...wrongOptions.slice(0, 3)]).slice(0, 4),
       });
@@ -45,6 +52,8 @@ function generateJLPTQuestions(kanjiData: SessionKanjiEntry[], count = 35): Ques
         type: 'kanji-to-reading',
         sentence: `${vocab.meaning}`,
         highlight: vocab.word,
+        highlightMeaning: (vocab as { highlightMeaning?: string }).highlightMeaning,
+        vocabHighlight: (vocab as { highlight?: string }).highlight || vocab.kanji,
         correctAnswer: vocab.reading,
         options: shuffle([vocab.reading, ...wrongReadings.slice(0, 3)]).slice(0, 4),
       });
@@ -61,24 +70,60 @@ export default function JLPTQuizPage() {
   const [score, setScore] = useState(0);
   const [started, setStarted] = useState(false);
   const [mounted, setMounted] = useState(false);
+  const [sessionList, setSessionList] = useState<{ session: number; count: number }[]>([]);
+  const [allKanjiCache, setAllKanjiCache] = useState<SessionKanjiEntry[]>([]);
 
-  useState(() => { if (typeof window !== 'undefined') setMounted(true); });
+  useEffect(() => {
+    setMounted(true);
+    loadSessions();
+  }, []);
 
-  function getAllKanji(): SessionKanjiEntry[] {
-    const all = Object.values(sessionKanji).flat();
-    if (typeof window === 'undefined') return all;
-    const customKeys = Object.keys(localStorage).filter((k) => k.startsWith('nihongo_custom_kanji_'));
-    customKeys.forEach((key) => {
-      try { const data = JSON.parse(localStorage.getItem(key) || ''); if (data.cards) all.push(...data.cards); } catch {}
-    });
-    return all;
+  async function loadSessions() {
+    // Get sessions from Supabase
+    const dbSessions = await getAllSessionData();
+    const kanjiSessions = dbSessions.filter((s) => s.type === 'kanji');
+
+    // Merge with static sessionKanji keys and localStorage
+    const sessionMap = new Map<number, number>();
+    Object.entries(sessionKanji).forEach(([k, v]) => sessionMap.set(Number(k), v.length));
+    kanjiSessions.forEach((s) => sessionMap.set(s.session_num, (sessionMap.get(s.session_num) || 0) + s.count));
+
+    if (typeof window !== 'undefined') {
+      Object.keys(localStorage).filter((k) => k.startsWith('nihongo_custom_kanji_')).forEach((key) => {
+        const num = parseInt(key.replace('nihongo_custom_kanji_', ''));
+        try { const data = JSON.parse(localStorage.getItem(key) || ''); if (data.cards) sessionMap.set(num, (sessionMap.get(num) || 0) + data.cards.length); } catch {}
+      });
+    }
+
+    setSessionList([...sessionMap.entries()].map(([session, count]) => ({ session, count })).sort((a, b) => a.session - b.session));
   }
 
-  function getSessionKanji(session: number): SessionKanjiEntry[] {
+  async function getFullSessionKanji(session: number): Promise<SessionKanjiEntry[]> {
     const base = sessionKanji[session] || [];
-    if (typeof window === 'undefined') return base;
-    try { const custom = localStorage.getItem(`nihongo_custom_kanji_${session}`); if (custom) { const data = JSON.parse(custom); if (data.cards) return [...base, ...data.cards]; } } catch {}
-    return base;
+    const dbData = await getSessionData(session, 'kanji') as SessionKanjiEntry[];
+    let custom: SessionKanjiEntry[] = [];
+    if (typeof window !== 'undefined') {
+      try { const raw = localStorage.getItem(`nihongo_custom_kanji_${session}`); if (raw) { const data = JSON.parse(raw); if (data.cards) custom = data.cards; } } catch {}
+    }
+    return [...base, ...dbData, ...custom];
+  }
+
+  async function loadAllKanji(): Promise<SessionKanjiEntry[]> {
+    if (allKanjiCache.length) return allKanjiCache;
+    const all = Object.values(sessionKanji).flat();
+    const dbSessions = await getAllSessionData();
+    const kanjiSessionNums = dbSessions.filter((s) => s.type === 'kanji').map((s) => s.session_num);
+    for (const num of kanjiSessionNums) {
+      const data = await getSessionData(num, 'kanji') as SessionKanjiEntry[];
+      all.push(...data);
+    }
+    if (typeof window !== 'undefined') {
+      Object.keys(localStorage).filter((k) => k.startsWith('nihongo_custom_kanji_')).forEach((key) => {
+        try { const data = JSON.parse(localStorage.getItem(key) || ''); if (data.cards) all.push(...data.cards); } catch {}
+      });
+    }
+    setAllKanjiCache(all);
+    return all;
   }
 
   function startQuiz(kanjiData: SessionKanjiEntry[]) {
@@ -89,30 +134,28 @@ export default function JLPTQuizPage() {
   // Session selector
   if (!started) {
     if (!mounted) return null;
-    const sessions = [...new Set([...Object.keys(sessionKanji).map(Number), ...Object.keys(localStorage).filter((k) => k.startsWith('nihongo_custom_kanji_')).map((k) => parseInt(k.replace('nihongo_custom_kanji_', '')))])].sort((a, b) => a - b);
 
     return (
-      <div className="min-h-screen p-4 pb-24">
-        <h1 className="text-2xl font-bold text-gray-800 mb-2">📝 JLPT Kanji Quiz</h1>
-        <p className="text-sm text-gray-500 mb-6">Chọn buổi hoặc thi tổng hợp</p>
+      <div className="min-h-screen p-4 pb-24 max-w-2xl mx-auto">
+        <h1 className="text-2xl font-bold text-gray-800 mb-1">📝 JLPT Kanji Quiz</h1>
+        <p className="text-sm text-gray-500 mb-5">{sessionList.reduce((a, b) => a + b.count, 0)} kanji • {sessionList.length} buổi</p>
 
-        <button onClick={() => startQuiz(getAllKanji())}
-          className="w-full py-4 mb-6 bg-gradient-to-r from-indigo-500 to-purple-500 text-white rounded-2xl font-bold text-lg shadow-md hover:shadow-lg transition-all">
-          🎲 Tổng hợp tất cả ({getAllKanji().length} kanji)
+        <button onClick={async () => startQuiz(await loadAllKanji())}
+          className="w-full py-4 mb-6 text-white rounded-xl font-bold text-lg shadow-md hover:shadow-lg transition-all" style={{ background: '#6C63FF' }}>
+          🎲 Tổng hợp tất cả ({sessionList.reduce((a, b) => a + b.count, 0)} kanji)
         </button>
 
-        <div className="space-y-2">
-          {sessions.map((s) => {
-            const data = getSessionKanji(s);
-            if (!data.length) return null;
-            return (
-              <button key={s} onClick={() => startQuiz(data)}
-                className="w-full flex items-center justify-between bg-white rounded-xl p-4 shadow-sm border border-gray-100 hover:border-indigo-300 transition-all">
-                <span className="font-medium text-gray-800">Buổi {s}</span>
-                <span className="text-sm text-gray-400">{data.length} kanji</span>
-              </button>
-            );
-          })}
+        <div className="space-y-2.5">
+          {sessionList.map(({ session, count }) => (
+            <button key={session} onClick={async () => startQuiz(await getFullSessionKanji(session))}
+              className="w-full flex items-center justify-between bg-white rounded-xl p-4 border-2 border-gray-200 hover:border-[#6C63FF]/40 transition-all">
+              <div className="flex items-center gap-3">
+                <span className="w-9 h-9 rounded-full flex items-center justify-center text-xs font-bold text-white" style={{ background: '#6C63FF' }}>{session}</span>
+                <span className="font-semibold text-gray-800">Buổi {session}</span>
+              </div>
+              <span className="text-sm font-medium" style={{ color: '#6C63FF' }}>{count} kanji</span>
+            </button>
+          ))}
         </div>
       </div>
     );
@@ -164,12 +207,12 @@ export default function JLPTQuizPage() {
 
       {/* Sentence with highlight */}
       <div className="bg-white rounded-2xl p-5 shadow-sm border border-gray-100 mb-6">
-        <p className="text-base text-gray-600 mb-2">{q.sentence}</p>
+        <p className="text-sm text-gray-500 mb-2" dangerouslySetInnerHTML={{ __html: q.highlightMeaning ? q.sentence.replace(new RegExp(`(${q.highlightMeaning})`, 'gi'), '<span class="underline decoration-amber-400 decoration-2 underline-offset-4 font-bold text-gray-800">$1</span>') : q.sentence }} />
         <p className="text-xl font-bold text-gray-800">
           {q.type === 'reading-to-kanji' ? (
-            <span className="underline decoration-rose-400 decoration-2 underline-offset-4">{q.highlight}</span>
+            <span dangerouslySetInnerHTML={{ __html: q.highlightReading ? q.highlight.replace(new RegExp(`(${q.highlightReading})`, 'g'), '<span class="text-amber-400 font-bold">$1</span>') : `<span class="text-amber-400 font-bold">${q.highlight}</span>` }} />
           ) : (
-            <span className="underline decoration-indigo-400 decoration-2 underline-offset-4">{q.highlight}</span>
+            <span dangerouslySetInnerHTML={{ __html: q.vocabHighlight ? q.highlight.replace(new RegExp(`(${q.vocabHighlight})`, 'g'), '<span class="text-amber-500 font-bold">$1</span>') : q.highlight }} />
           )}
         </p>
       </div>

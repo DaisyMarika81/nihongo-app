@@ -1,31 +1,67 @@
 'use client';
 
-import { useState, Suspense } from 'react';
+import { useState, Suspense, useCallback } from 'react';
 import { useSearchParams } from 'next/navigation';
+import { addSessionData, SessionDataType } from '@/lib/session-data';
 
-const EXAMPLE_FLASHCARD = `{
-  "session": SESSION_NUM,
-  "type": "flashcard",
-  "cards": [
-    { "japanese": "たべます", "vietnamese": "Ăn" },
-    { "japanese": "のみます", "vietnamese": "Uống" }
-  ]
-}`;
+const TEMPLATES: Record<SessionDataType, string> = {
+  flashcard: `[
+  { "japanese": "", "vietnamese": "" }
+]`,
+  grammar: `[
+  {
+    "pattern": "",
+    "meaning": "",
+    "example": "",
+    "exampleRomaji": "",
+    "exampleMeaning": "",
+    "note": ""
+  }
+]`,
+  kanji: `[
+  {
+    "kanji": "",
+    "hanViet": "",
+    "meaning": "",
+    "onyomi": "",
+    "kunyomi": "",
+    "mnemonic": "",
+    "vocab": [
+      { "word": "", "reading": "", "meaning": "", "highlight": "", "highlightMeaning": "", "highlightReading": "" }
+    ]
+  }
+]`
+};
 
-const EXAMPLE_GRAMMAR = `{
-  "session": SESSION_NUM,
-  "type": "grammar",
-  "items": [
-    {
-      "pattern": "Vて + います",
-      "meaning": "Đang làm V (trạng thái tiếp diễn)",
-      "example": "今 本を 読んでいます。",
-      "exampleRomaji": "Ima hon wo yonde imasu.",
-      "exampleMeaning": "Bây giờ tôi đang đọc sách.",
-      "note": "Dùng cho hành động đang diễn ra"
-    }
-  ]
-}`;
+const EXAMPLES: Record<SessionDataType, string> = {
+  flashcard: `[
+  { "japanese": "たべます", "vietnamese": "Ăn" },
+  { "japanese": "のみます", "vietnamese": "Uống" }
+]`,
+  grammar: `[
+  {
+    "pattern": "Vて + います",
+    "meaning": "Đang làm V (trạng thái tiếp diễn)",
+    "example": "今 本を 読んでいます。",
+    "exampleRomaji": "Ima hon wo yonde imasu.",
+    "exampleMeaning": "Bây giờ tôi đang đọc sách.",
+    "note": "Dùng cho hành động đang diễn ra"
+  }
+]`,
+  kanji: `[
+  {
+    "kanji": "術",
+    "hanViet": "THUẬT",
+    "meaning": "Kĩ thuật",
+    "onyomi": "ジュツ",
+    "kunyomi": "",
+    "mnemonic": "Đi (行) trên con đường **kĩ thuật**",
+    "vocab": [
+      { "word": "新しい技術を学ぶ", "reading": "あたらしいぎじゅつをまなぶ", "meaning": "Học kĩ thuật mới", "highlight": "技術", "highlightMeaning": "kĩ thuật", "highlightReading": "ぎじゅつ" }
+    ]
+  }
+]`
+};
 
 export default function UploadPage() {
   return <Suspense><UploadContent /></Suspense>;
@@ -35,78 +71,127 @@ function UploadContent() {
   const searchParams = useSearchParams();
   const sessionFromUrl = searchParams.get('session') || '1';
   const [json, setJson] = useState('');
+  const [type, setType] = useState<SessionDataType>('kanji');
   const [status, setStatus] = useState<{ type: 'success' | 'error'; msg: string } | null>(null);
+  const [loading, setLoading] = useState(false);
+  const [showExample, setShowExample] = useState(false);
 
-  function handleUpload() {
+  // Real-time validation
+  const validation = useCallback((): { valid: boolean; error?: string; count?: number } => {
+    if (!json.trim()) return { valid: false };
     try {
-      const data = JSON.parse(json);
-      if (!data.session || !data.type) throw new Error('Cần có "session" và "type" (flashcard/grammar/kanji)');
-
-      const keyMap: Record<string, string> = {
-        flashcard: `nihongo_custom_flashcard_${data.session}`,
-        grammar: `nihongo_custom_grammar_${data.session}`,
-        kanji: `nihongo_custom_kanji_${data.session}`,
-      };
-      const key = keyMap[data.type];
-      if (!key) throw new Error('type phải là: flashcard, grammar, hoặc kanji');
-
-      localStorage.setItem(key, JSON.stringify(data));
-      const count = data.cards?.length || data.items?.length || 0;
-      setStatus({ type: 'success', msg: `✅ Đã lưu ${data.type} buổi ${data.session} (${count} mục)` });
-    } catch (e: unknown) {
-      setStatus({ type: 'error', msg: `❌ Lỗi: ${(e as Error).message}` });
+      const parsed = JSON.parse(json);
+      if (!Array.isArray(parsed)) return { valid: false, error: 'JSON phải là mảng [...]' };
+      if (!parsed.length) return { valid: false, error: 'Mảng rỗng' };
+      return { valid: true, count: parsed.length };
+    } catch (e) {
+      const msg = (e as Error).message;
+      const match = msg.match(/position (\d+)/);
+      return { valid: false, error: match ? `Lỗi cú pháp tại vị trí ${match[1]}` : msg };
     }
-  }
+  }, [json]);
 
-  function loadExample(type: 'flashcard' | 'grammar' | 'kanji') {
-    const templates: Record<string, string> = {
-      flashcard: EXAMPLE_FLASHCARD,
-      grammar: EXAMPLE_GRAMMAR,
-      kanji: `{\n  "session": ${sessionFromUrl},\n  "type": "kanji",\n  "cards": [\n    {\n      "kanji": "任",\n      "hanViet": "NHIỆM",\n      "meaning": "Giao phó",\n      "onyomi": "ニン",\n      "kunyomi": "まか(せる)",\n      "vocab": [\n        { "word": "責任", "reading": "せきにん", "meaning": "Trách nhiệm" },\n        { "word": "担任の先生", "reading": "たんにんのせんせい", "meaning": "Giáo viên chủ nhiệm" }\n      ]\n    }\n  ]\n}`,
-    };
-    setJson(templates[type].replace(/SESSION_NUM/g, sessionFromUrl));
+  const v = validation();
+
+  function switchType(t: SessionDataType) {
+    setType(t);
+    if (!json.trim()) setJson(TEMPLATES[t]);
     setStatus(null);
   }
 
-  return (
-    <div className="min-h-screen p-4 pb-24">
-      <h1 className="text-2xl font-bold text-gray-800 mb-2">📤 Upload — Buổi {sessionFromUrl}</h1>
-      <p className="text-sm text-gray-500 mb-4">Paste JSON để thêm flashcard hoặc ngữ pháp cho mỗi buổi học</p>
+  async function handleUpload() {
+    if (!v.valid) return;
+    try {
+      setLoading(true);
+      const items = JSON.parse(json);
+      await addSessionData(parseInt(sessionFromUrl), type, items);
+      setStatus({ type: 'success', msg: `✅ Đã lưu ${items.length} mục ${type} vào Buổi ${sessionFromUrl}` });
+      setJson('');
+    } catch (e: unknown) {
+      setStatus({ type: 'error', msg: `❌ ${(e as Error).message}` });
+    } finally {
+      setLoading(false);
+    }
+  }
 
-      <div className="flex gap-2 mb-4">
-        <button onClick={() => loadExample('flashcard')} className="text-xs px-3 py-1.5 bg-indigo-100 text-indigo-600 rounded-lg font-medium">📋 Mẫu Flashcard</button>
-        <button onClick={() => loadExample('grammar')} className="text-xs px-3 py-1.5 bg-violet-100 text-violet-600 rounded-lg font-medium">📋 Mẫu Ngữ pháp</button>
-        <button onClick={() => loadExample('kanji')} className="text-xs px-3 py-1.5 bg-rose-100 text-rose-600 rounded-lg font-medium">📋 Mẫu Kanji</button>
+  // Line numbers
+  const lineCount = json.split('\n').length;
+
+  return (
+    <div className="min-h-screen p-4 pb-24 max-w-2xl mx-auto">
+      {/* Header */}
+      <h1 className="text-2xl font-bold text-gray-800 mb-1">📤 Upload dữ liệu</h1>
+      <p className="text-sm text-gray-500 mb-4">
+        Dữ liệu sẽ được thêm vào: <span className="font-medium text-gray-700">Lịch học › Buổi {sessionFromUrl}</span>
+      </p>
+
+      {/* Type selector */}
+      <div className="flex items-center gap-2 mb-4">
+        {(['flashcard', 'grammar', 'kanji'] as const).map(t => (
+          <button key={t} onClick={() => switchType(t)}
+            className={`text-xs px-3 py-2 rounded-xl font-medium transition-all ${type === t ? 'text-white shadow-sm' : 'bg-gray-100 text-gray-600 hover:bg-gray-200'}`}
+            style={type === t ? { background: '#6C63FF' } : {}}>
+            {t === 'flashcard' ? '🃏 Flashcard' : t === 'grammar' ? '📐 Ngữ pháp' : '🈁 Kanji'}
+          </button>
+        ))}
       </div>
 
-      <textarea
-        value={json}
-        onChange={(e) => { setJson(e.target.value); setStatus(null); }}
-        placeholder="Paste JSON vào đây..."
-        className="w-full h-64 px-4 py-3 border border-gray-200 rounded-xl bg-white font-mono text-xs focus:outline-none focus:ring-2 focus:ring-indigo-300 resize-y"
-      />
-
-      {status && (
-        <p className={`mt-2 text-sm ${status.type === 'success' ? 'text-emerald-600' : 'text-red-500'}`}>{status.msg}</p>
-      )}
-
-      <button onClick={handleUpload} className="mt-4 w-full py-3 bg-gradient-to-r from-indigo-500 to-purple-500 text-white rounded-xl font-medium shadow">
-        💾 Lưu
-      </button>
-
-      <div className="mt-8">
-        <h2 className="font-bold text-gray-700 mb-2">📖 Cấu trúc JSON</h2>
-        <div className="bg-gray-50 rounded-xl p-4 border border-gray-100 text-xs font-mono space-y-4">
-          <div>
-            <p className="text-indigo-600 font-bold mb-1">Flashcard:</p>
-            <pre className="whitespace-pre-wrap text-gray-600">{EXAMPLE_FLASHCARD}</pre>
+      {/* Code editor area */}
+      <div className="relative border border-gray-200 rounded-xl overflow-hidden bg-white">
+        {/* Toolbar */}
+        <div className="flex items-center justify-between px-3 py-2 border-b border-gray-100 bg-gray-50">
+          <div className="flex items-center gap-2">
+            {v.valid && <span className="text-[11px] font-medium" style={{ color: '#22C55E' }}>✓ JSON hợp lệ • {v.count} mục</span>}
+            {v.error && <span className="text-[11px] font-medium text-red-500">✗ {v.error}</span>}
+            {!json.trim() && <span className="text-[11px] text-gray-400">Nhập JSON mảng...</span>}
           </div>
-          <div>
-            <p className="text-violet-600 font-bold mb-1">Ngữ pháp:</p>
-            <pre className="whitespace-pre-wrap text-gray-600">{EXAMPLE_GRAMMAR}</pre>
+          <button onClick={() => setShowExample(!showExample)} className="text-[11px] text-gray-400 hover:text-gray-600 px-2 py-1 rounded-md hover:bg-gray-100">
+            ? Xem mẫu
+          </button>
+        </div>
+
+        {/* Example modal */}
+        {showExample && (
+          <div className="px-3 py-2 border-b border-gray-100 bg-amber-50">
+            <div className="flex items-center justify-between mb-1">
+              <span className="text-[11px] font-medium text-amber-700">Mẫu {type}:</span>
+              <div className="flex gap-2">
+                <button onClick={() => { setJson(EXAMPLES[type]); setShowExample(false); }} className="text-[10px] px-2 py-0.5 bg-amber-200 text-amber-800 rounded font-medium">Dùng mẫu này</button>
+                <button onClick={() => setShowExample(false)} className="text-[10px] text-amber-600">✕</button>
+              </div>
+            </div>
+            <pre className="text-[10px] text-amber-800 font-mono overflow-x-auto whitespace-pre">{EXAMPLES[type]}</pre>
           </div>
+        )}
+
+        {/* Editor with line numbers */}
+        <div className="flex">
+          <div className="py-3 px-2 bg-gray-50 border-r border-gray-100 select-none">
+            {Array.from({ length: Math.max(lineCount, 10) }, (_, i) => (
+              <div key={i} className="text-[10px] text-gray-300 text-right leading-5 w-6">{i + 1}</div>
+            ))}
+          </div>
+          <textarea
+            value={json}
+            onChange={(e) => { setJson(e.target.value); setStatus(null); }}
+            placeholder={TEMPLATES[type]}
+            className="flex-1 px-3 py-3 font-mono text-xs leading-5 focus:outline-none resize-y min-h-[280px] bg-transparent"
+            spellCheck={false}
+          />
         </div>
       </div>
+
+      {/* Status */}
+      {status && (
+        <p className={`mt-3 text-sm ${status.type === 'success' ? 'text-emerald-600' : 'text-red-500'}`}>{status.msg}</p>
+      )}
+
+      {/* Save button */}
+      <button onClick={handleUpload} disabled={loading || !v.valid}
+        className={`mt-4 w-full py-3 rounded-xl font-medium shadow transition-all ${v.valid ? 'text-white' : 'bg-gray-200 text-gray-400 cursor-not-allowed'}`}
+        style={v.valid ? { background: '#6C63FF' } : {}}>
+        {loading ? '⏳ Đang lưu...' : `💾 Lưu vào Buổi ${sessionFromUrl}`}
+      </button>
     </div>
   );
 }

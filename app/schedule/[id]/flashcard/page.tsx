@@ -3,7 +3,11 @@
 import { useState, useEffect } from 'react';
 import { useParams } from 'next/navigation';
 import { speak } from '@/lib/speak';
-import { sessionCards } from '@/data/session-cards';
+import { sessionCards, SessionCard } from '@/data/session-cards';
+import { getSessionData, deleteSessionItem } from '@/lib/session-data';
+import { supabase } from '@/lib/supabase';
+
+import { getSessionSRS, saveSessionSRS, markCard, SessionSRSCard } from '@/lib/session-srs';
 
 function shuffle<T>(arr: T[]): T[] {
   const a = [...arr];
@@ -22,14 +26,12 @@ export default function SessionFlashCard() {
   const baseCards = sessionCards[sessionId] || [];
   const STORAGE_KEY = `nihongo_session${sessionId}_state`;
 
-  // Merge with custom uploaded cards
-  const [cards, setCards] = useState(baseCards);
+  const [cards, setCards] = useState<SessionCard[]>(baseCards);
+
   useEffect(() => {
-    const custom = localStorage.getItem(`nihongo_custom_flashcard_${sessionId}`);
-    if (custom) {
-      const data = JSON.parse(custom);
-      if (data.cards) setCards([...baseCards, ...data.cards]);
-    }
+    getSessionData(sessionId, 'flashcard').then(data => {
+      if ((data as SessionCard[]).length) setCards([...baseCards, ...(data as SessionCard[])]);
+    });
   }, [sessionId]);
 
   const [mode, setMode] = useState<Mode>('flashcard');
@@ -65,6 +67,12 @@ export default function SessionFlashCard() {
     return () => window.removeEventListener('keydown', handleKey);
   }, [mode, remaining]);
 
+  const [srsCards, setSrsCards] = useState<SessionSRSCard[]>([]);
+
+  useEffect(() => {
+    getSessionSRS(sessionId, 'flashcard').then(setSrsCards);
+  }, [sessionId]);
+
   function saveState(d: Set<number>, u: Set<number>) {
     localStorage.setItem(STORAGE_KEY, JSON.stringify({ done: [...d], unknown: [...u] }));
   }
@@ -77,6 +85,13 @@ export default function SessionFlashCard() {
     setUnknown(newUnknown);
     setDone(newDone);
     saveState(newDone, newUnknown);
+
+    // SRS tracking
+    const cardId = `fc-${sessionId}-${index}`;
+    const updated = markCard(srsCards, cardId, known);
+    setSrsCards(updated);
+    saveSessionSRS(sessionId, 'flashcard', updated);
+
     setFlipped(false);
     setTimeout(() => {
       const allReviewed = new Set([...newDone, ...newUnknown]);
@@ -118,12 +133,61 @@ export default function SessionFlashCard() {
     }, 1200);
   }
 
+  const [managing, setManaging] = useState(false);
+
+  async function handleDeleteCard(idx: number) {
+    if (!confirm(`Xóa "${cards[idx].japanese}"?`)) return;
+    const baseLen = baseCards.length;
+    if (idx >= baseLen) {
+      await deleteSessionItem(sessionId, 'flashcard', idx - baseLen);
+    }
+    setCards(cards.filter((_, i) => i !== idx));
+  }
+
   if (!cards.length) {
     return (
       <div className="min-h-screen p-4 pb-24 flex flex-col items-center justify-center text-center">
         <p className="text-4xl mb-4">📭</p>
         <p className="text-lg font-bold text-gray-800">Buổi {sessionId} chưa có flashcard</p>
         <p className="text-sm text-gray-500 mt-2">Thêm data vào file data/session-cards.ts</p>
+      </div>
+    );
+  }
+
+  // === MANAGE (delete) ===
+  if (managing) {
+    function exportFlashcard() {
+      const json = JSON.stringify(cards, null, 2);
+      const blob = new Blob([json], { type: 'application/json' });
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = `flashcard-buoi-${sessionId}.json`;
+      a.click();
+      URL.revokeObjectURL(url);
+    }
+
+    return (
+      <div className="min-h-screen p-4 pb-24">
+        <div className="flex items-center justify-between mb-4">
+          <h1 className="text-xl font-bold text-gray-800">🗑️ Quản lý từ ({cards.length})</h1>
+          <button onClick={() => setManaging(false)} className="text-sm text-gray-500">← Quay lại</button>
+        </div>
+        <div className="flex gap-2 mb-4">
+          <button onClick={exportFlashcard} className="px-4 py-2 bg-gradient-to-r from-sky-400 to-blue-500 text-white rounded-xl text-sm font-medium shadow">📤 Export JSON</button>
+          <button onClick={async () => { if (!confirm(`Xóa tất cả ${cards.length} từ buổi ${sessionId}?`)) return; await supabase.from('session_data').delete().eq('session_num', sessionId).eq('type', 'flashcard'); setCards([]); setManaging(false); }} className="px-4 py-2 bg-gradient-to-r from-red-400 to-red-500 text-white rounded-xl text-sm font-medium shadow">🗑️ Xóa tất cả</button>
+        </div>
+        <div className="space-y-2">
+          {cards.map((c, i) => (
+            <div key={i} className="flex items-center justify-between bg-white rounded-xl p-3 shadow-sm border border-gray-100">
+              <div>
+                <span className="font-bold text-gray-800">{c.japanese}</span>
+                <span className="text-sm text-gray-500 ml-2">{c.vietnamese}</span>
+              </div>
+              <button onClick={() => handleDeleteCard(i)} className="text-xs px-2 py-1 text-red-400 hover:text-red-600 hover:bg-red-50 rounded">🗑️</button>
+            </div>
+          ))}
+        </div>
       </div>
     );
   }
@@ -234,7 +298,10 @@ export default function SessionFlashCard() {
     <div className="min-h-screen p-4 pb-24 flex flex-col items-center">
       <h1 className="text-xl font-bold text-gray-800 mb-2">📖 Buổi {sessionId} - Flashcard</h1>
       <p className="text-sm text-gray-500 mb-1">Còn {remaining}/{cards.length}</p>
-      {unknown.size > 0 && <button onClick={() => setMode('unknown')} className="text-xs text-red-400 mb-4">❌ Chưa thuộc: {unknown.size}</button>}
+      <div className="flex gap-3 mb-4">
+        {unknown.size > 0 && <button onClick={() => setMode('unknown')} className="text-xs text-red-400">❌ Chưa thuộc: {unknown.size}</button>}
+        <button onClick={() => setManaging(true)} className="text-xs text-gray-400 hover:text-red-500">🗑️ Quản lý</button>
+      </div>
 
       <div className="w-72 sm:w-80 h-52 cursor-pointer [perspective:1000px] mb-4" onClick={() => setFlipped(!flipped)}>
         <div className={`relative w-full h-full transition-transform duration-500 [transform-style:preserve-3d] ${flipped ? '[transform:rotateY(180deg)]' : ''}`}>

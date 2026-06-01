@@ -31,27 +31,73 @@ body {
 }
 
 [data-theme="dark"] body {
-  background: #0f172a;
-  color: #e2e8f0;
+  background: #0B1120;
+  color: #F8FAFC;
 }
 
-[data-theme="dark"] .bg-white { background-color: #1e293b; }
-[data-theme="dark"] .bg-gray-50 { background-color: #1e293b; }
-[data-theme="dark"] .bg-gray-100 { background-color: #334155; }
-[data-theme="dark"] .bg-gray-200 { background-color: #475569; }
-[data-theme="dark"] .border-gray-100 { border-color: #334155; }
-[data-theme="dark"] .border-gray-200 { border-color: #475569; }
-[data-theme="dark"] .text-gray-800 { color: #f1f5f9; }
-[data-theme="dark"] .text-gray-700 { color: #e2e8f0; }
-[data-theme="dark"] .text-gray-600 { color: #cbd5e1; }
-[data-theme="dark"] .text-gray-500 { color: #94a3b8; }
-[data-theme="dark"] .text-gray-400 { color: #64748b; }
-[data-theme="dark"] .shadow-sm { box-shadow: 0 1px 2px rgba(0,0,0,0.3); }
+[data-theme="dark"] .bg-white { background-color: #111827; }
+[data-theme="dark"] .bg-gray-50 { background-color: #111827; }
+[data-theme="dark"] .bg-gray-100 { background-color: #1F2937; }
+[data-theme="dark"] .bg-gray-200 { background-color: #374151; }
+[data-theme="dark"] .border-gray-100 { border-color: rgba(255,255,255,0.08); }
+[data-theme="dark"] .border-gray-200 { border-color: rgba(255,255,255,0.08); }
+[data-theme="dark"] .text-gray-800 { color: #F8FAFC; }
+[data-theme="dark"] .text-gray-700 { color: #F8FAFC; }
+[data-theme="dark"] .text-gray-600 { color: #CBD5E1; }
+[data-theme="dark"] .text-gray-500 { color: #94A3B8; }
+[data-theme="dark"] .text-gray-400 { color: #94A3B8; }
+[data-theme="dark"] .shadow-sm { box-shadow: none; }
+
+/* Dark mode - inputs & forms */
+[data-theme="dark"] input,
+[data-theme="dark"] textarea,
+[data-theme="dark"] select { background-color: #111827; color: #F8FAFC; border-color: rgba(255,255,255,0.08); }
+[data-theme="dark"] input::placeholder,
+[data-theme="dark"] textarea::placeholder { color: #94A3B8; }
+
+/* Dark mode - specific bg colors */
+[data-theme="dark"] .bg-indigo-50 { background-color: rgba(108,99,255,0.06); }
+[data-theme="dark"] .bg-indigo-100 { background-color: rgba(108,99,255,0.12); }
+[data-theme="dark"] .bg-emerald-100 { background-color: rgba(34,197,94,0.1); }
+[data-theme="dark"] .bg-red-100 { background-color: rgba(239,68,68,0.08); }
+[data-theme="dark"] .bg-amber-50 { background-color: rgba(245,158,11,0.08); }
+[data-theme="dark"] .bg-violet-100 { background-color: rgba(108,99,255,0.12); }
+[data-theme="dark"] .bg-rose-100 { background-color: rgba(239,68,68,0.08); }
+
+/* Dark mode - text colors */
+[data-theme="dark"] .text-indigo-600 { color: #8B7CFF; }
+[data-theme="dark"] .text-indigo-500 { color: #8B7CFF; }
+[data-theme="dark"] .text-indigo-400 { color: #A5B4FC; }
+[data-theme="dark"] .text-emerald-600 { color: #22C55E; }
+[data-theme="dark"] .text-emerald-500 { color: #22C55E; }
+[data-theme="dark"] .text-red-500 { color: #F87171; }
+[data-theme="dark"] .text-red-400 { color: #F87171; }
+[data-theme="dark"] .text-amber-600 { color: #FBBF24; }
+[data-theme="dark"] .text-violet-600 { color: #8B7CFF; }
+
+/* Dark mode - cards */
+[data-theme="dark"] .rounded-xl.border,
+[data-theme="dark"] .rounded-2xl.border { border-color: rgba(255,255,255,0.08); }
+
+/* Dark mode - buttons */
+[data-theme="dark"] .bg-gray-300 { background-color: #374151; }
+[data-theme="dark"] .text-gray-700 { color: #F8FAFC; }
 
 .scrollbar-hide::-webkit-scrollbar { display: none; }
 .scrollbar-hide { -ms-overflow-style: none; scrollbar-width: none; }
 
 ruby rt { font-size: 0.6em; color: #818cf8; }
+
+/* Responsive */
+@media (min-width: 768px) {
+  body { font-size: 16px; }
+  .text-xs:not(.text-white) { font-size: 0.75rem !important; }
+  .text-sm:not(.text-white) { font-size: 0.875rem !important; }
+  .text-base:not(.text-white) { font-size: 1rem !important; }
+  .text-lg:not(.text-white) { font-size: 1.125rem !important; }
+  .text-xl:not(.text-white) { font-size: 1.25rem !important; }
+  .text-2xl:not(.text-white) { font-size: 1.5rem !important; }
+}
 
 @supports (padding-bottom: env(safe-area-inset-bottom)) {
   nav { padding-bottom: env(safe-area-inset-bottom); }
@@ -63,6 +109,41 @@ ruby rt { font-size: 0.6em; color: #818cf8; }
 .ProseMirror h2 { font-size: 1.375rem; font-weight: 600; margin: 0.4em 0; }
 .ProseMirror h3 { font-size: 1.125rem; font-weight: 600; margin: 0.3em 0; }
 .ProseMirror p { margin: 0.4em 0; }
+.ProseMirror p.is-editor-empty:first-child::before {
+  content: 'Ghi chú từ vựng khó, mẹo nhớ riêng cho buổi học này...';
+  color: #9ca3af;
+  float: left;
+  pointer-events: none;
+  height: 0;
+}
 .ProseMirror ul { list-style: disc; padding-left: 1.5em; }
 .ProseMirror ol { list-style: decimal; padding-left: 1.5em; }
 .ProseMirror li { margin: 0.2em 0; }
+
+/* TipTap Task List */
+ul[data-type="taskList"] {
+  list-style: none;
+  padding: 0;
+}
+ul[data-type="taskList"] li {
+  display: flex;
+  align-items: flex-start;
+  gap: 0.5rem;
+  margin-bottom: 0.25rem;
+}
+ul[data-type="taskList"] li label {
+  display: flex;
+  align-items: center;
+  margin-top: 0.2rem;
+}
+ul[data-type="taskList"] li label input[type="checkbox"] {
+  width: 1rem;
+  height: 1rem;
+  border-radius: 0.25rem;
+  accent-color: #6366f1;
+  cursor: pointer;
+}
+ul[data-type="taskList"] li[data-checked="true"] > div > p {
+  text-decoration: line-through;
+  color: #9ca3af;
+}
