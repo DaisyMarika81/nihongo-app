@@ -6,7 +6,7 @@ import { addSessionData, SessionDataType } from '@/lib/session-data';
 
 const TEMPLATES: Record<SessionDataType, string> = {
   flashcard: `[
-  { "japanese": "", "vietnamese": "" }
+  { "kanji": "", "hiragana": "", "romaji": "", "meaning": "", "examples": [], "antonym": {} }
 ]`,
   grammar: `[
   {
@@ -35,8 +35,32 @@ const TEMPLATES: Record<SessionDataType, string> = {
 
 const EXAMPLES: Record<SessionDataType, string> = {
   flashcard: `[
-  { "japanese": "たべます", "vietnamese": "Ăn" },
-  { "japanese": "のみます", "vietnamese": "Uống" }
+  {
+    "kanji": "高齢",
+    "hiragana": "こうれい",
+    "romaji": "kourei",
+    "meaning": "Già, cao tuổi",
+    "examples": [
+      {
+        "japanese": "祖母は高齢だがまだとても元気だ。",
+        "hiragana": "そぼはこうれいだがまだとてもげんきだ。",
+        "romaji": "sobo wa kourei da ga mada totemo genki da.",
+        "meaning_vi": "Bà tôi tuy đã cao tuổi nhưng vẫn còn rất khỏe mạnh."
+      }
+    ]
+  },
+  {
+    "kanji": "先輩",
+    "hiragana": "せんぱい",
+    "romaji": "senpai",
+    "meaning": "Tiền bối, đàn anh/đàn chị",
+    "antonym": {
+      "kanji": "後輩",
+      "hiragana": "こうはい",
+      "romaji": "kouhai",
+      "meaning": "Hậu bối, đàn em"
+    }
+  }
 ]`,
   grammar: `[
   {

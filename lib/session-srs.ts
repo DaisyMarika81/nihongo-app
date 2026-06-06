@@ -1,34 +1,40 @@
 import { supabase } from './supabase';
 
-// SRS state per session, stored in Supabase
-// Key: session_num + type (e.g. "flashcard_3")
-
 export type SessionSRSCard = {
-  id: string; // e.g. "fc-3-0" (flashcard session 3 index 0)
-  interval: number; // days
-  nextReview: string; // ISO date YYYY-MM-DD
+  id: string;
+  interval: number;
+  nextReview: string;
   repetitions: number;
+};
+
+type SessionSRSData = {
+  cards: SessionSRSCard[];
+  done: number[];
+  unknown: number[];
 };
 
 const TABLE = 'session_srs';
 
-export async function getSessionSRS(sessionNum: number, type: string): Promise<SessionSRSCard[]> {
+export async function getSessionSRS(sessionNum: number, type: string): Promise<SessionSRSData> {
   const { data } = await supabase
     .from(TABLE)
     .select('cards')
     .eq('session_num', sessionNum)
     .eq('type', type)
     .single();
-  return data?.cards || [];
+  const raw = data?.cards as SessionSRSData | SessionSRSCard[] | null;
+  if (!raw) return { cards: [], done: [], unknown: [] };
+  if (Array.isArray(raw)) return { cards: raw, done: [], unknown: [] };
+  return { cards: raw.cards || [], done: raw.done || [], unknown: raw.unknown || [] };
 }
 
-export async function saveSessionSRS(sessionNum: number, type: string, cards: SessionSRSCard[]): Promise<void> {
+export async function saveSessionSRS(sessionNum: number, type: string, data: SessionSRSData): Promise<void> {
   await supabase
     .from(TABLE)
     .upsert({
       session_num: sessionNum,
       type,
-      cards,
+      cards: data,
       updated_at: new Date().toISOString(),
     }, { onConflict: 'session_num,type' });
 }
@@ -49,7 +55,6 @@ export function markCard(cards: SessionSRSCard[], id: string, known: boolean): S
       return cards.map(c => c.id === id ? { ...c, interval: 0, nextReview: today, repetitions: 0 } : c);
     }
   } else {
-    // New card
     if (known) {
       const next = new Date();
       next.setDate(next.getDate() + 1);

@@ -58,23 +58,46 @@ export default function SessionFlashCard() {
     }
   }, [STORAGE_KEY]);
 
+  function prevCard() {
+    setFlipped(false);
+    setIndex((i) => (i - 1 + cards.length) % cards.length);
+  }
+
+  function nextCard() {
+    setFlipped(false);
+    setIndex((i) => (i + 1) % cards.length);
+  }
+
   useEffect(() => {
     function handleKey(e: KeyboardEvent) {
       if (mode !== 'flashcard' || remaining === 0) return;
-      if (e.code === 'Space') { e.preventDefault(); setFlipped((f) => !f); }
+      if (e.code === 'Space') { e.preventDefault(); next(true); }
+      if (e.code === 'ArrowLeft') { e.preventDefault(); prevCard(); }
+      if (e.code === 'ArrowRight') { e.preventDefault(); nextCard(); }
     }
     window.addEventListener('keydown', handleKey);
     return () => window.removeEventListener('keydown', handleKey);
-  }, [mode, remaining]);
+  }, [mode, remaining, cards.length, index]);
 
   const [srsCards, setSrsCards] = useState<SessionSRSCard[]>([]);
 
   useEffect(() => {
-    getSessionSRS(sessionId, 'flashcard').then(setSrsCards);
+    getSessionSRS(sessionId, 'flashcard').then(data => {
+      setSrsCards(data.cards);
+      if (data.done.length || data.unknown.length) {
+        setDone(new Set(data.done));
+        setUnknown(new Set(data.unknown));
+      }
+    });
   }, [sessionId]);
 
-  function saveState(d: Set<number>, u: Set<number>) {
+  function saveState(d: Set<number>, u: Set<number>, cards?: SessionSRSCard[]) {
     localStorage.setItem(STORAGE_KEY, JSON.stringify({ done: [...d], unknown: [...u] }));
+    saveSessionSRS(sessionId, 'flashcard', { cards: cards || srsCards, done: [...d], unknown: [...u] });
+  }
+
+  function persistState(d: Set<number>, u: Set<number>, cards: SessionSRSCard[]) {
+    saveSessionSRS(sessionId, 'flashcard', { cards, done: [...d], unknown: [...u] });
   }
 
   function next(known: boolean) {
@@ -84,13 +107,12 @@ export default function SessionFlashCard() {
     if (known) newDone.add(index);
     setUnknown(newUnknown);
     setDone(newDone);
-    saveState(newDone, newUnknown);
 
     // SRS tracking
     const cardId = `fc-${sessionId}-${index}`;
     const updated = markCard(srsCards, cardId, known);
     setSrsCards(updated);
-    saveSessionSRS(sessionId, 'flashcard', updated);
+    persistState(newDone, newUnknown, updated);
 
     setFlipped(false);
     setTimeout(() => {
@@ -104,9 +126,11 @@ export default function SessionFlashCard() {
 
   function reset() { setDone(new Set()); setUnknown(new Set()); setIndex(0); setFlipped(false); setMode('flashcard'); localStorage.removeItem(STORAGE_KEY); }
 
+  function getMeaning(c: SessionCard) { return c.meaning || c.vietnamese; }
+
   function generateOptions(pool: typeof cards, idx: number) {
-    const correct = pool[idx].vietnamese;
-    const wrong = shuffle(cards.filter((c) => c.vietnamese !== correct)).slice(0, 3).map((c) => c.vietnamese);
+    const correct = getMeaning(pool[idx]);
+    const wrong = shuffle(cards.filter((c) => getMeaning(c) !== correct)).slice(0, 3).map((c) => getMeaning(c));
     setOptions(shuffle([correct, ...wrong]));
   }
 
@@ -125,7 +149,7 @@ export default function SessionFlashCard() {
   function handleQuizAnswer(i: number) {
     if (selected !== null) return;
     setSelected(i);
-    const isCorrect = options[i] === quizCards[qIndex].vietnamese;
+    const isCorrect = options[i] === getMeaning(quizCards[qIndex]);
     setQScore({ correct: qScore.correct + (isCorrect ? 1 : 0), total: qScore.total + 1 });
     setTimeout(() => {
       if (qIndex + 1 >= quizCards.length) { setQuizDone(true); }
@@ -134,6 +158,8 @@ export default function SessionFlashCard() {
   }
 
   const [managing, setManaging] = useState(false);
+  const [editIdx, setEditIdx] = useState<number | null>(null);
+  const [editData, setEditData] = useState<Partial<SessionCard>>({});
 
   async function handleDeleteCard(idx: number) {
     if (!confirm(`Xóa "${cards[idx].japanese}"?`)) return;
@@ -142,6 +168,23 @@ export default function SessionFlashCard() {
       await deleteSessionItem(sessionId, 'flashcard', idx - baseLen);
     }
     setCards(cards.filter((_, i) => i !== idx));
+  }
+
+  function startEdit(idx: number) {
+    setEditIdx(idx);
+    setEditData({ ...cards[idx] });
+  }
+
+  async function saveEdit() {
+    if (editIdx === null) return;
+    const updated = cards.map((c, i) => i === editIdx ? { ...c, ...editData } as SessionCard : c);
+    setCards(updated);
+    const baseLen = baseCards.length;
+    if (editIdx >= baseLen) {
+      const dbItems = updated.slice(baseLen);
+      await supabase.from('session_data').update({ items: dbItems, updated_at: new Date().toISOString() }).eq('session_num', sessionId).eq('type', 'flashcard');
+    }
+    setEditIdx(null);
   }
 
   if (!cards.length) {
@@ -178,15 +221,51 @@ export default function SessionFlashCard() {
           <button onClick={async () => { if (!confirm(`Xóa tất cả ${cards.length} từ buổi ${sessionId}?`)) return; await supabase.from('session_data').delete().eq('session_num', sessionId).eq('type', 'flashcard'); setCards([]); setManaging(false); }} className="px-4 py-2 bg-gradient-to-r from-red-400 to-red-500 text-white rounded-xl text-sm font-medium shadow">🗑️ Xóa tất cả</button>
         </div>
         <div className="space-y-2">
-          {cards.map((c, i) => (
-            <div key={i} className="flex items-center justify-between bg-white rounded-xl p-3 shadow-sm border border-gray-100">
-              <div>
-                <span className="font-bold text-gray-800">{c.japanese}</span>
-                <span className="text-sm text-gray-500 ml-2">{c.vietnamese}</span>
+          {cards.map((c, i) => {
+            const isRich = 'kanji' in c && c.kanji;
+            if (editIdx === i) {
+              return (
+                <div key={i} className="bg-white rounded-xl p-4 shadow-sm border border-gray-100 space-y-2">
+                  <div className="flex gap-2">
+                    <div className="flex-1">
+                      <label className="text-[10px] text-gray-400 font-medium">{isRich ? 'Kanji' : 'Japanese'}</label>
+                      <input value={isRich ? (editData.kanji || '') : (editData.japanese || '')} onChange={e => setEditData({ ...editData, ...(isRich ? { kanji: e.target.value } : { japanese: e.target.value }) })}
+                        className="w-full px-3 py-2 border rounded-lg text-sm" />
+                    </div>
+                    {isRich && (
+                      <div className="flex-1">
+                        <label className="text-[10px] text-gray-400 font-medium">Hiragana</label>
+                        <input value={editData.hiragana || ''} onChange={e => setEditData({ ...editData, hiragana: e.target.value })}
+                          className="w-full px-3 py-2 border rounded-lg text-sm" />
+                      </div>
+                    )}
+                  </div>
+                  <div>
+                    <label className="text-[10px] text-gray-400 font-medium">Nghĩa</label>
+                    <input value={isRich ? (editData.meaning || '') : (editData.vietnamese || '')} onChange={e => setEditData({ ...editData, ...(isRich ? { meaning: e.target.value } : { vietnamese: e.target.value }) })}
+                      className="w-full px-3 py-2 border rounded-lg text-sm" />
+                  </div>
+                  <div className="flex gap-2 pt-1">
+                    <button onClick={saveEdit} className="text-xs px-3 py-1.5 bg-emerald-500 text-white rounded-lg">💾 Lưu</button>
+                    <button onClick={() => setEditIdx(null)} className="text-xs px-3 py-1.5 bg-gray-200 rounded-lg">Hủy</button>
+                  </div>
+                </div>
+              );
+            }
+            return (
+              <div key={i} className="flex items-center justify-between bg-white rounded-xl p-3 shadow-sm border border-gray-100">
+                <div>
+                  <span className="font-bold text-gray-800">{c.kanji || c.japanese}</span>
+                  {c.hiragana && <span className="text-sm text-gray-400 ml-1">({c.hiragana})</span>}
+                  <span className="text-sm text-gray-500 ml-2">{c.meaning || c.vietnamese}</span>
+                </div>
+                <div className="flex gap-1">
+                  <button onClick={() => startEdit(i)} className="text-xs px-2 py-1 text-gray-400 hover:text-indigo-600 hover:bg-indigo-50 rounded">✏️</button>
+                  <button onClick={() => handleDeleteCard(i)} className="text-xs px-2 py-1 text-red-400 hover:text-red-600 hover:bg-red-50 rounded">🗑️</button>
+                </div>
               </div>
-              <button onClick={() => handleDeleteCard(i)} className="text-xs px-2 py-1 text-red-400 hover:text-red-600 hover:bg-red-50 rounded">🗑️</button>
-            </div>
-          ))}
+            );
+          })}
         </div>
       </div>
     );
@@ -207,10 +286,11 @@ export default function SessionFlashCard() {
             return (
               <div key={i} className="flex items-center justify-between bg-white rounded-xl p-4 shadow-sm border border-gray-100">
                 <div className="flex items-center gap-3">
-                  <button onClick={() => speak(c.japanese)} className="text-lg">🔊</button>
+                  <button onClick={() => speak(c.kanji || c.japanese)} className="text-lg">🔊</button>
                   <div>
-                    <span className="font-bold text-gray-800">{c.japanese}</span>
-                    <div className="text-sm text-gray-500">{c.vietnamese}</div>
+                    <span className="font-bold text-gray-800">{c.kanji || c.japanese}</span>
+                    <span className="text-sm text-gray-400 ml-1">{c.hiragana || ''}</span>
+                    <div className="text-sm text-gray-500">{c.meaning || c.vietnamese}</div>
                   </div>
                 </div>
                 <button onClick={() => {
@@ -250,8 +330,15 @@ export default function SessionFlashCard() {
       <div className="min-h-screen p-4 pb-24 flex flex-col items-center">
         <h1 className="text-xl font-bold text-gray-800 mb-2">✍️ Trắc nghiệm</h1>
         <p className="text-sm text-gray-500 mb-6">Câu {qIndex + 1}/{quizCards.length} • Đúng: {qScore.correct}</p>
-        <div className="bg-gradient-to-br from-indigo-400 to-purple-500 rounded-2xl px-8 py-10 mb-6 shadow-xl">
-          <span className="text-3xl font-bold" style={{ color: '#fff' }}>{q.japanese}</span>
+        <div className="bg-gradient-to-br from-indigo-400 to-purple-500 rounded-2xl px-8 py-6 mb-6 shadow-xl text-center">
+          {q.kanji ? (
+            <>
+              <span className="text-3xl font-bold" style={{ color: '#fff' }}>{q.kanji}</span>
+              <div className="text-sm mt-1 opacity-80" style={{ color: '#fff' }}>{q.hiragana}</div>
+            </>
+          ) : (
+            <span className="text-3xl font-bold" style={{ color: '#fff' }}>{q.japanese}</span>
+          )}
         </div>
         <div className="w-full max-w-sm space-y-3">
           {options.map((opt, i) => {
@@ -292,34 +379,82 @@ export default function SessionFlashCard() {
     );
   }
 
-  // === FLASHCARD ===
+  // === FLASHCARD (no flip) ===
   const card = cards[index];
+  const isRich = 'kanji' in card && card.kanji;
+
   return (
     <div className="min-h-screen p-4 pb-24 flex flex-col items-center">
-      <h1 className="text-xl font-bold text-gray-800 mb-2">📖 Buổi {sessionId} - Flashcard</h1>
-      <p className="text-sm text-gray-500 mb-1">Còn {remaining}/{cards.length}</p>
-      <div className="flex gap-3 mb-4">
-        {unknown.size > 0 && <button onClick={() => setMode('unknown')} className="text-xs text-red-400">❌ Chưa thuộc: {unknown.size}</button>}
-        <button onClick={() => setManaging(true)} className="text-xs text-gray-400 hover:text-red-500">🗑️ Quản lý</button>
-      </div>
-
-      <div className="w-72 sm:w-80 h-52 cursor-pointer [perspective:1000px] mb-4" onClick={() => setFlipped(!flipped)}>
-        <div className={`relative w-full h-full transition-transform duration-500 [transform-style:preserve-3d] ${flipped ? '[transform:rotateY(180deg)]' : ''}`}>
-          <div className="absolute inset-0 flex flex-col items-center justify-center rounded-2xl bg-gradient-to-br from-indigo-400 to-purple-500 shadow-xl [backface-visibility:hidden]">
-            <span className="text-3xl font-bold" style={{ color: '#fff' }}>{card.japanese}</span>
-            <button onClick={(e) => { e.stopPropagation(); speak(card.japanese); }} className="mt-3 text-xl opacity-80 hover:opacity-100" style={{ color: '#fff' }}>🔊</button>
-          </div>
-          <div className="absolute inset-0 flex flex-col items-center justify-center rounded-2xl bg-gradient-to-br from-emerald-400 to-teal-500 shadow-xl [backface-visibility:hidden] [transform:rotateY(180deg)]">
-            <span className="text-2xl font-bold" style={{ color: '#fff' }}>{card.vietnamese}</span>
-          </div>
+      <div className="flex items-center justify-between w-full max-w-md mb-2">
+        <h1 className="text-xl font-bold text-gray-800">📖 Buổi {sessionId}</h1>
+        <div className="flex gap-3 items-center">
+          {unknown.size > 0 && <button onClick={() => setMode('unknown')} className="text-xs text-red-400">❌ {unknown.size}</button>}
+          <button onClick={() => setManaging(true)} className="text-xs text-gray-400 hover:text-red-500">🗑️</button>
         </div>
       </div>
+      <p className="text-sm text-gray-500 mb-4">Còn {remaining}/{cards.length}</p>
 
-      <p className="text-xs text-gray-400 mb-4">{flipped ? '' : 'Space = lật thẻ'}</p>
+      {isRich ? (
+        <div className="w-full max-w-md rounded-2xl shadow-xl p-6 text-white mb-4" style={{ background: 'linear-gradient(180deg, #2d3748 0%, #3d5a5a 100%)' }}>
+          <div className="flex items-start justify-between">
+            <div className="flex-1">
+              <h2 className="text-4xl font-bold">{card.kanji}</h2>
+              <p className="text-xl mt-1 opacity-90">{card.hiragana}</p>
+              {card.romaji && <p className="text-sm mt-0.5 opacity-70 italic">{card.romaji}</p>}
+            </div>
+            <button onClick={(e) => { e.stopPropagation(); speak(card.kanji!); }} className="text-2xl opacity-80 hover:opacity-100 hover:scale-125 transition-transform">🔊</button>
+          </div>
+          <div className="mt-4 text-lg font-medium border-t border-white/20 pt-3">
+            {card.meaning || card.vietnamese}
+          </div>
+          <div className="mt-3 text-sm bg-white/10 rounded-xl p-3 min-h-[48px]">
+            {card.antonym ? (
+              <><span className="font-semibold">Trái nghĩa:</span>{' '}
+              <span className="font-medium">{card.antonym.kanji}</span> ({card.antonym.hiragana}) – {card.antonym.meaning}</>
+            ) : <span className="opacity-0">Trái nghĩa:</span>}
+          </div>
+          {card.examples && card.examples.length > 0 && (
+            <div className="mt-3">
+              <button onClick={() => setFlipped(!flipped)} className="flex items-center gap-1 text-sm opacity-80 hover:opacity-100">
+                <span>📝 Ví dụ ({card.examples.length})</span>
+                <span className={`text-xs transition-transform ${flipped ? 'rotate-180' : ''}`}>▼</span>
+              </button>
+              {flipped && (
+                <div className="mt-2 space-y-2">
+                  {card.examples.map((ex, i) => (
+                    <div key={i} className="bg-white/10 rounded-xl p-3">
+                      <div className="flex items-start justify-between">
+                        <p className="font-medium">{ex.japanese}</p>
+                        <button onClick={(e) => { e.stopPropagation(); speak(ex.japanese); }} className="text-sm opacity-70 hover:opacity-100 ml-2 shrink-0">🔊</button>
+                      </div>
+                      <p className="text-xs opacity-70 mt-0.5">{ex.hiragana}</p>
+                      <p className="text-xs opacity-50 italic">{ex.romaji}</p>
+                      <p className="text-xs mt-1.5 border-t border-white/10 pt-1.5">{ex.meaning_vi}</p>
+                    </div>
+                  ))}
+                </div>
+              )}
+            </div>
+          )}
+        </div>
+      ) : (
+        <div className="w-full max-w-md rounded-2xl shadow-xl p-8 text-white mb-4 flex flex-col items-center" style={{ background: 'linear-gradient(180deg, #2d3748 0%, #3d5a5a 100%)' }}>
+          <h2 className="text-3xl font-bold">{card.japanese}</h2>
+          <button onClick={(e) => { e.stopPropagation(); speak(card.japanese); }} className="mt-3 text-xl opacity-80 hover:opacity-100 hover:scale-125 transition-transform">🔊</button>
+          <div className="mt-4 text-lg font-medium border-t border-white/20 pt-3 text-center">
+            {card.vietnamese}
+          </div>
+        </div>
+      )}
+
+      <div className="flex items-center justify-between w-full max-w-md mb-2">
+        <button onClick={prevCard} className="w-10 h-10 rounded-full bg-white border border-gray-200 shadow-sm flex items-center justify-center text-gray-500 hover:text-gray-800 hover:border-gray-300 transition-all">◀</button>
+        <span className="text-xs text-gray-400 font-medium">{index + 1} / {cards.length}</span>
+        <button onClick={nextCard} className="w-10 h-10 rounded-full bg-white border border-gray-200 shadow-sm flex items-center justify-center text-gray-500 hover:text-gray-800 hover:border-gray-300 transition-all">▶</button>
+      </div>
 
       <div className="flex gap-3">
         <button onClick={() => next(false)} className="px-5 py-2 rounded-xl bg-red-400 text-white font-medium shadow">Chưa thuộc</button>
-        <button onClick={() => setFlipped(!flipped)} className="px-5 py-2 rounded-xl bg-gray-300 text-gray-700 font-medium">Lật</button>
         <button onClick={() => next(true)} className="px-5 py-2 rounded-xl bg-emerald-400 text-white font-medium shadow">Đã thuộc ✓</button>
       </div>
 

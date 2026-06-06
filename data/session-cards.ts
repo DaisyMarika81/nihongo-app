@@ -1,4 +1,27 @@
-export type SessionCard = { japanese: string; vietnamese: string };
+export type SessionCardExample = {
+  japanese: string;
+  hiragana: string;
+  romaji: string;
+  meaning_vi: string;
+};
+
+export type SessionCardAntonym = {
+  kanji: string;
+  hiragana: string;
+  romaji: string;
+  meaning: string;
+};
+
+export type SessionCard = {
+  japanese: string;
+  vietnamese: string;
+  kanji?: string;
+  hiragana?: string;
+  romaji?: string;
+  meaning?: string;
+  examples?: SessionCardExample[];
+  antonym?: SessionCardAntonym;
+};
 
 export const sessionCards: Record<number, SessionCard[]> = {
   1: [
