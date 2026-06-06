@@ -9,6 +9,24 @@ import { supabase } from '@/lib/supabase';
 
 import { getSessionSRS, saveSessionSRS, markCard, SessionSRSCard } from '@/lib/session-srs';
 
+function highlightWord(text: string, words: string[]) {
+  for (const word of words) {
+    if (!word || !text.includes(word)) continue;
+    const parts = text.split(word);
+    return (
+      <>
+        {parts.map((part, i) => (
+          <span key={i}>
+            {part}
+            {i < parts.length - 1 && <span className="text-yellow-300 font-bold">{word}</span>}
+          </span>
+        ))}
+      </>
+    );
+  }
+  return <>{text}</>;
+}
+
 function shuffle<T>(arr: T[]): T[] {
   const a = [...arr];
   for (let i = a.length - 1; i > 0; i--) {
@@ -424,7 +442,7 @@ export default function SessionFlashCard() {
                   {card.examples.map((ex, i) => (
                     <div key={i} className="bg-white/10 rounded-xl p-3">
                       <div className="flex items-start justify-between">
-                        <p className="font-medium">{ex.japanese}</p>
+                        <p className="font-medium">{highlightWord(ex.japanese, [card.kanji!, card.hiragana || ''])}</p>
                         <button onClick={(e) => { e.stopPropagation(); speak(ex.japanese); }} className="text-sm opacity-70 hover:opacity-100 ml-2 shrink-0">🔊</button>
                       </div>
                       <p className="text-xs opacity-70 mt-0.5">{ex.hiragana}</p>
