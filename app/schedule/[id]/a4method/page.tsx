@@ -1,50 +1,46 @@
 'use client';
 
 import { useState, useEffect } from 'react';
+import { useParams } from 'next/navigation';
 import { speak } from '@/lib/speak';
-
-const words = [
-  { jp: 'まにあう', vn: 'Kịp giờ' }, { jp: 'おくれます', vn: 'Trễ giờ' },
-  { jp: 'やります', vn: 'Làm' }, { jp: 'そうだんします', vn: 'Trao đổi' },
-  { jp: 'ちゅういします', vn: 'Chú ý' }, { jp: 'しょうらい', vn: 'Tương lai' },
-  { jp: 'へんじ', vn: 'Trả lời' }, { jp: 'まじめ', vn: 'Chăm chỉ' },
-  { jp: 'せわします', vn: 'Chăm sóc' }, { jp: 'おきゃくさん', vn: 'Khách hàng' },
-  { jp: 'もうしこみます', vn: 'Đăng ký' }, { jp: 'けいけん', vn: 'Kinh nghiệm' },
-  { jp: 'つごうがいい', vn: 'Rảnh' }, { jp: 'つごうがわるい', vn: 'Ko rảnh' },
-  { jp: 'よてい', vn: 'Dự định' }, { jp: 'かいぎ', vn: 'Cuộc họp' },
-  { jp: 'しゅっせき', vn: 'Tham dự' }, { jp: 'ひつよう', vn: 'Cần thiết' },
-  { jp: 'きゅうりょう', vn: 'Tiền lương' }, { jp: 'ねっしん', vn: 'Nhiệt tình' },
-  { jp: 'へいてん', vn: 'Đóng cửa' }, { jp: 'しらせます', vn: 'Thông báo' },
-  { jp: 'じけん', vn: 'Sự kiện' }, { jp: 'たしかめます', vn: 'Xác minh' },
-  { jp: 'じょうほう', vn: 'Thông tin' }, { jp: 'おこないます', vn: 'Tổ chức' },
-  { jp: 'ふくざつ', vn: 'Phức tạp' }, { jp: 'きめます', vn: 'Quyết định' },
-  { jp: 'たのみます', vn: 'Nhờ vả' }, { jp: 'つとめます', vn: 'Làm việc' },
-  { jp: 'つたえます', vn: 'Truyền đạt' }, { jp: 'こまります', vn: 'Gặp khó khăn' },
-  { jp: 'よういします', vn: 'Chuẩn bị' }, { jp: 'ちゅうしします', vn: 'Hoãn' },
-  { jp: 'はじまります', vn: 'Bắt đầu' }, { jp: 'しりょう', vn: 'Tài liệu' },
-  { jp: 'つかれます', vn: 'Mệt' }, { jp: 'はっきり', vn: 'Rõ ràng' },
-  { jp: 'はっぴょうします', vn: 'Phát biểu' }, { jp: 'つづけます', vn: 'Tiếp tục' },
-];
+import { sessionCards, SessionCard } from '@/data/session-cards';
+import { getSessionData } from '@/lib/session-data';
 
 type Step = 1 | 2 | 3 | 4;
-const STORAGE_KEY = 'nihongo_a4_session1';
 
 export default function A4MethodPage() {
+  const { id } = useParams();
+  const sessionId = parseInt(id as string);
+
+  const [words, setWords] = useState<{ jp: string; kana: string; vn: string }[]>([]);
   const [step, setStep] = useState<Step>(1);
   const [index, setIndex] = useState(0);
   const [input, setInput] = useState('');
   const [results, setResults] = useState<Record<number, boolean>>({});
   const [wrongList, setWrongList] = useState<number[]>([]);
   const [showAnswer, setShowAnswer] = useState(false);
+  const [showKana, setShowKana] = useState(false);
+
+  const STORAGE_KEY = `nihongo_a4_session${sessionId}`;
 
   useEffect(() => {
+    const base = sessionCards[sessionId] || [];
+    getSessionData(sessionId, 'flashcard').then(data => {
+      const cloud = (data as SessionCard[]) || [];
+      const all = [...base, ...cloud].map(c => ({
+        jp: c.kanji || c.japanese,
+        kana: c.hiragana || '',
+        vn: c.meaning || c.vietnamese,
+      }));
+      setWords(all);
+    });
     const saved = localStorage.getItem(STORAGE_KEY);
     if (saved) {
       const { step: s, wrongList: w } = JSON.parse(saved);
       if (s) setStep(s);
       if (w) setWrongList(w);
     }
-  }, []);
+  }, [sessionId]);
 
   function save(s: Step, w: number[]) {
     localStorage.setItem(STORAGE_KEY, JSON.stringify({ step: s, wrongList: w }));
@@ -65,7 +61,7 @@ export default function A4MethodPage() {
   }
 
   function nextWord() {
-    setInput(''); setShowAnswer(false);
+    setInput(''); setShowAnswer(false); setShowKana(false);
     if (index + 1 >= words.length) return;
     setIndex(index + 1);
   }
@@ -82,6 +78,19 @@ export default function A4MethodPage() {
     localStorage.removeItem(STORAGE_KEY);
   }
 
+  function prevCard() { setShowKana(false); setIndex((i) => Math.max(0, i - 1)); }
+  function nextCard() { setShowKana(false); setIndex((i) => Math.min(words.length - 1, i + 1)); }
+
+  if (!words.length) {
+    return (
+      <div className="min-h-screen p-4 pb-24 flex flex-col items-center justify-center text-center">
+        <p className="text-4xl mb-4">📭</p>
+        <p className="text-lg font-bold text-gray-800">Buổi {sessionId} chưa có từ vựng</p>
+        <p className="text-sm text-gray-500 mt-2">Upload flashcard trước khi dùng phương pháp A4.</p>
+      </div>
+    );
+  }
+
   const word = index < words.length ? words[index] : words[0];
   const isLastWord = index >= words.length - 1;
   const correctCount = Object.values(results).filter(Boolean).length;
@@ -95,36 +104,50 @@ export default function A4MethodPage() {
 
   const info = stepInfo[step];
 
-  // Step 1: Just read through
   if (step === 1) {
     return (
       <div className="min-h-screen p-4 pb-24">
-        <h1 className="text-xl font-bold text-gray-800 mb-1">{info.title}</h1>
+        <div className="flex items-center justify-between mb-1">
+          <h1 className="text-xl font-bold text-gray-800">{info.title}</h1>
+          <span className="text-xs text-gray-400">Buổi {sessionId}</span>
+        </div>
         <p className="text-sm text-gray-500 mb-4">Đọc qua {words.length} từ, ghi nhớ khái quát</p>
         <p className="text-xs text-gray-400 mb-4">{index + 1}/{words.length}</p>
 
         <div className="bg-white rounded-2xl p-6 shadow-sm border border-gray-100 text-center mb-4">
           <button onClick={() => speak(word.jp)} className="text-lg mb-2">🔊</button>
-          <p className="text-3xl font-bold text-gray-800 mb-2">{word.jp}</p>
+          <p className="text-3xl font-bold text-gray-800 mb-1">{word.jp}</p>
+          {word.kana && (
+            <div className="flex items-center justify-center gap-2 mb-2">
+              {showKana ? (
+                <span className="text-sm text-gray-400">{word.kana}</span>
+              ) : (
+                <span className="text-sm text-gray-300 italic">?</span>
+              )}
+              <button onClick={() => setShowKana(!showKana)}
+                className="text-xs text-gray-400 hover:text-indigo-500 transition-colors">
+                {showKana ? '🙈' : '👁️'}
+              </button>
+            </div>
+          )}
           <p className="text-lg text-emerald-600">{word.vn}</p>
         </div>
 
-        <div className="flex gap-3 justify-center">
-          {index > 0 && <button onClick={() => setIndex(index - 1)} className="px-4 py-2 bg-gray-200 rounded-xl text-sm">← Trước</button>}
-          {!isLastWord ? (
-            <button onClick={() => setIndex(index + 1)} className="px-4 py-2 bg-indigo-500 text-white rounded-xl text-sm shadow">Tiếp →</button>
-          ) : (
-            <button onClick={nextStep} className="px-4 py-2 bg-gradient-to-r from-emerald-400 to-teal-500 text-white rounded-xl text-sm shadow">✓ Xong → Bước 2</button>
-          )}
+        <div className="flex items-center justify-center gap-3">
+          <button onClick={prevCard} className="w-9 h-9 rounded-full bg-white border border-gray-200 flex items-center justify-center text-gray-400 hover:text-gray-600">◀</button>
+          <div className="flex gap-3">
+            {!isLastWord ? (
+              <button onClick={nextCard} className="px-4 py-2 bg-indigo-500 text-white rounded-xl text-sm shadow">Tiếp →</button>
+            ) : (
+              <button onClick={nextStep} className="px-4 py-2 bg-gradient-to-r from-emerald-400 to-teal-500 text-white rounded-xl text-sm shadow">✓ Xong → Bước 2</button>
+            )}
+          </div>
         </div>
       </div>
     );
   }
 
-  // Steps 2, 3, 4: Write and check
   if (index >= words.length) {
-    // trigger summary
-    const correctCount = Object.values(results).filter(Boolean).length;
     return (
       <div className="min-h-screen p-4 pb-24 text-center">
         <h1 className="text-xl font-bold text-gray-800 mb-4">{info.title} — Kết quả</h1>
@@ -153,7 +176,7 @@ export default function A4MethodPage() {
   return (
     <div className="min-h-screen p-4 pb-24">
       <h1 className="text-lg font-bold text-gray-800 mb-1">{info.title}</h1>
-      <p className="text-xs text-gray-400 mb-4">{index + 1}/{words.length} • Đúng: {correctCount}</p>
+      <p className="text-xs text-gray-400 mb-4">Buổi {sessionId} • {index + 1}/{words.length} • Đúng: {correctCount}</p>
 
       <div className="bg-white rounded-2xl p-6 shadow-sm border border-gray-100 text-center mb-4">
         {info.showField === 'jp' && <button onClick={() => speak(word.jp)} className="text-lg mb-2">🔊</button>}

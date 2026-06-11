@@ -2,6 +2,7 @@
 
 import { useState, useEffect } from 'react';
 import { useParams } from 'next/navigation';
+import { useAuth } from '@/lib/auth';
 import { speak } from '@/lib/speak';
 import { sessionCards, SessionCard } from '@/data/session-cards';
 import { getSessionData, deleteSessionItem } from '@/lib/session-data';
@@ -36,10 +37,11 @@ function shuffle<T>(arr: T[]): T[] {
   return a;
 }
 
-type Mode = 'flashcard' | 'quiz' | 'unknown';
+type Mode = 'flashcard' | 'quiz' | 'unknown' | 'viewall';
 
 export default function SessionFlashCard() {
   const { id } = useParams();
+  const { isAdmin } = useAuth();
   const sessionId = parseInt(id as string);
   const baseCards = sessionCards[sessionId] || [];
   const STORAGE_KEY = `nihongo_session${sessionId}_state`;
@@ -89,7 +91,7 @@ export default function SessionFlashCard() {
   useEffect(() => {
     function handleKey(e: KeyboardEvent) {
       if (mode !== 'flashcard' || remaining === 0) return;
-      if (e.code === 'Space') { e.preventDefault(); next(true); }
+      if (e.code === 'Space') { e.preventDefault(); setFlipped(f => !f); }
       if (e.code === 'ArrowLeft') { e.preventDefault(); prevCard(); }
       if (e.code === 'ArrowRight') { e.preventDefault(); nextCard(); }
     }
@@ -289,6 +291,60 @@ export default function SessionFlashCard() {
     );
   }
 
+  // === VIEW ALL ===
+  if (mode === 'viewall') {
+    return (
+      <div className="min-h-screen p-4 pb-24">
+        <div className="flex items-center justify-between mb-4">
+          <h1 className="text-xl font-bold text-gray-800">📋 Tất cả từ vựng ({cards.length})</h1>
+          <button onClick={() => setMode('flashcard')} className="text-sm text-gray-500">← Quay lại</button>
+        </div>
+        <div className="space-y-3">
+          {cards.map((c, i) => {
+            const isR = 'kanji' in c && c.kanji;
+            return (
+              <div key={i} className="bg-white rounded-xl p-4 shadow-sm border border-gray-100">
+                <div className="flex items-center gap-3">
+                  <span className="w-7 h-7 rounded-full bg-indigo-100 flex items-center justify-center text-xs font-bold text-indigo-600 shrink-0">{i + 1}</span>
+                  <div className="flex-1">
+                    <div className="flex items-baseline gap-2">
+                      <span className="text-lg font-bold text-gray-800">{isR ? c.kanji : c.japanese}</span>
+                      {isR && c.hiragana && <span className="text-sm text-sky-500">{c.hiragana}</span>}
+                      {isR && c.romaji && <span className="text-xs text-gray-400 italic">{c.romaji}</span>}
+                    </div>
+                    <p className="text-sm text-emerald-600 font-medium">{c.meaning || c.vietnamese}</p>
+                    {isR && c.antonym && (
+                      <p className="text-xs text-gray-500 mt-1">↔ {c.antonym.kanji} ({c.antonym.hiragana}) – {c.antonym.meaning}</p>
+                    )}
+                  </div>
+                  <button onClick={() => speak(isR ? c.kanji! : c.japanese)} className="text-lg">🔊</button>
+                </div>
+                {isR && c.examples && c.examples.length > 0 && (
+                  <div className="mt-2 ml-10 space-y-1.5">
+                    {c.examples.map((ex, j) => (
+                      <div key={j} className="bg-gray-50 rounded-lg p-2.5">
+                        <p className="text-sm font-medium text-gray-800" dangerouslySetInnerHTML={{ __html: ex.japanese.replace(new RegExp(`(${c.kanji || ''})`, 'g'), '<span class="text-amber-500 font-bold">$1</span>') }} />
+                        <p className="text-xs text-gray-600" dangerouslySetInnerHTML={{ __html: ex.hiragana.replace(new RegExp(`(${c.hiragana || ''})`, 'g'), '<span class="text-amber-500 font-bold">$1</span>') }} />
+                        <p className="text-xs text-gray-600" dangerouslySetInnerHTML={{ __html: (() => {
+                          const meanings = (c.meaning || c.vietnamese || '').split(/[,、]/).map(s => s.trim()).filter(Boolean);
+                          let html = ex.meaning_vi;
+                          for (const m of meanings) {
+                            html = html.replace(new RegExp(`(${m})`, 'gi'), '<span class="text-amber-500 font-bold">$1</span>');
+                          }
+                          return html;
+                        })() }} />
+                      </div>
+                    ))}
+                  </div>
+                )}
+              </div>
+            );
+          })}
+        </div>
+      </div>
+    );
+  }
+
   // === UNKNOWN LIST ===
   if (mode === 'unknown') {
     const unknownCards = [...unknown].map((i) => cards[i]);
@@ -397,88 +453,91 @@ export default function SessionFlashCard() {
     );
   }
 
-  // === FLASHCARD (no flip) ===
+  // === FLASHCARD (flip style like Kanji) ===
   const card = cards[index];
   const isRich = 'kanji' in card && card.kanji;
 
   return (
-    <div className="min-h-screen p-4 pb-24 flex flex-col items-center">
-      <div className="flex items-center justify-between w-full max-w-md mb-2">
+    <div className="h-[calc(100dvh-4rem)] p-3 flex flex-col items-center">
+      <div className="flex items-center justify-between w-full max-w-md mb-1">
         <h1 className="text-xl font-bold text-gray-800">📖 Buổi {sessionId}</h1>
         <div className="flex gap-3 items-center">
           {unknown.size > 0 && <button onClick={() => setMode('unknown')} className="text-xs text-red-400">❌ {unknown.size}</button>}
-          <button onClick={() => setManaging(true)} className="text-xs text-gray-400 hover:text-red-500">🗑️</button>
+          <button onClick={() => setMode('viewall')} className="text-xs text-gray-400 hover:text-indigo-500">📋 Tất cả</button>
+          {isAdmin && <button onClick={() => setManaging(true)} className="text-xs text-gray-400 hover:text-red-500">🗑️</button>}
         </div>
       </div>
-      <p className="text-sm text-gray-500 mb-4">Còn {remaining}/{cards.length}</p>
 
-      {isRich ? (
-        <div className="w-full max-w-md rounded-2xl shadow-xl p-6 text-white mb-4" style={{ background: 'linear-gradient(180deg, #2d3748 0%, #3d5a5a 100%)' }}>
-          <div className="flex items-start justify-between">
-            <div className="flex-1">
-              <h2 className="text-4xl font-bold">{card.kanji}</h2>
-              <p className="text-xl mt-1 opacity-90">{card.hiragana}</p>
-              {card.romaji && <p className="text-sm mt-0.5 opacity-70 italic">{card.romaji}</p>}
-            </div>
-            <button onClick={(e) => { e.stopPropagation(); speak(card.kanji!); }} className="text-2xl opacity-80 hover:opacity-100 hover:scale-125 transition-transform">🔊</button>
-          </div>
-          <div className="mt-4 text-lg font-medium border-t border-white/20 pt-3">
-            {card.meaning || card.vietnamese}
-          </div>
-          <div className="mt-3 text-sm bg-white/10 rounded-xl p-3 min-h-[48px]">
-            {card.antonym ? (
-              <><span className="font-semibold">Trái nghĩa:</span>{' '}
-              <span className="font-medium">{card.antonym.kanji}</span> ({card.antonym.hiragana}) – {card.antonym.meaning}</>
-            ) : <span className="opacity-0">Trái nghĩa:</span>}
-          </div>
-          {card.examples && card.examples.length > 0 && (
-            <div className="mt-3">
-              <button onClick={() => setFlipped(!flipped)} className="flex items-center gap-1 text-sm opacity-80 hover:opacity-100">
-                <span>📝 Ví dụ ({card.examples.length})</span>
-                <span className={`text-xs transition-transform ${flipped ? 'rotate-180' : ''}`}>▼</span>
-              </button>
-              {flipped && (
-                <div className="mt-2 space-y-2">
-                  {card.examples.map((ex, i) => (
-                    <div key={i} className="bg-white/10 rounded-xl p-3">
-                      <div className="flex items-start justify-between">
-                        <p className="font-medium">{highlightWord(ex.japanese, [card.kanji!, card.hiragana || ''])}</p>
-                        <button onClick={(e) => { e.stopPropagation(); speak(ex.japanese); }} className="text-sm opacity-70 hover:opacity-100 ml-2 shrink-0">🔊</button>
-                      </div>
-                      <p className="text-xs opacity-70 mt-0.5">{ex.hiragana}</p>
-                      <p className="text-xs opacity-50 italic">{ex.romaji}</p>
-                      <p className="text-xs mt-1.5 border-t border-white/10 pt-1.5">{ex.meaning_vi}</p>
-                    </div>
-                  ))}
-                </div>
-              )}
-            </div>
-          )}
+      {/* Progress bar */}
+      <div className="w-full max-w-md mb-1">
+        <div className="flex items-center justify-between text-xs text-gray-500 mb-1">
+          <span>Còn {remaining}/{cards.length}</span>
         </div>
-      ) : (
-        <div className="w-full max-w-md rounded-2xl shadow-xl p-8 text-white mb-4 flex flex-col items-center" style={{ background: 'linear-gradient(180deg, #2d3748 0%, #3d5a5a 100%)' }}>
-          <h2 className="text-3xl font-bold">{card.japanese}</h2>
-          <button onClick={(e) => { e.stopPropagation(); speak(card.japanese); }} className="mt-3 text-xl opacity-80 hover:opacity-100 hover:scale-125 transition-transform">🔊</button>
-          <div className="mt-4 text-lg font-medium border-t border-white/20 pt-3 text-center">
-            {card.vietnamese}
-          </div>
-        </div>
-      )}
-
-      <div className="flex items-center justify-between w-full max-w-md mb-2">
-        <button onClick={prevCard} className="w-10 h-10 rounded-full bg-white border border-gray-200 shadow-sm flex items-center justify-center text-gray-500 hover:text-gray-800 hover:border-gray-300 transition-all">◀</button>
-        <span className="text-xs text-gray-400 font-medium">{index + 1} / {cards.length}</span>
-        <button onClick={nextCard} className="w-10 h-10 rounded-full bg-white border border-gray-200 shadow-sm flex items-center justify-center text-gray-500 hover:text-gray-800 hover:border-gray-300 transition-all">▶</button>
-      </div>
-
-      <div className="flex gap-3">
-        <button onClick={() => next(false)} className="px-5 py-2 rounded-xl bg-red-400 text-white font-medium shadow">Chưa thuộc</button>
-        <button onClick={() => next(true)} className="px-5 py-2 rounded-xl bg-emerald-400 text-white font-medium shadow">Đã thuộc ✓</button>
-      </div>
-
-      <div className="mt-6 w-full max-w-sm">
         <div className="h-2 bg-gray-200 rounded-full overflow-hidden">
-          <div className="h-full bg-emerald-400 rounded-full transition-all" style={{ width: `${(done.size / cards.length) * 100}%` }} />
+          <div className="h-full rounded-full transition-all" style={{ width: `${(done.size / cards.length) * 100}%`, background: '#22C55E' }} />
+        </div>
+      </div>
+
+      {/* Card - full height */}
+      <div className="w-full flex-1 cursor-pointer [perspective:1000px] my-2" onClick={() => setFlipped(!flipped)}>
+        <div className={`relative w-full h-full transition-transform duration-500 [transform-style:preserve-3d] ${flipped ? '[transform:rotateY(180deg)]' : ''}`}>
+          {/* Front: Kanji + Hiragana */}
+          <div className="absolute inset-0 flex flex-col items-center justify-center rounded-2xl shadow-xl [backface-visibility:hidden] p-6" style={{ background: 'linear-gradient(180deg, #2d3748 0%, #3d5a5a 100%)' }}>
+            <span className="font-bold text-white" style={{ fontSize: isRich ? '5rem' : '3.5rem' }}>{isRich ? card.kanji : card.japanese}</span>
+            {isRich && card.hiragana && <p className="text-2xl mt-3 text-white/90">{card.hiragana}</p>}
+            {isRich && card.romaji && <p className="text-sm mt-1 text-white/50 italic">{card.romaji}</p>}
+            <button onClick={(e) => { e.stopPropagation(); speak(isRich ? card.kanji! : card.japanese); }} className="mt-4 text-2xl opacity-70 hover:opacity-100 text-white">🔊</button>
+            <p className="mt-4 text-sm text-white/40">Tap hoặc Space để lật</p>
+          </div>
+          {/* Back: Nghĩa + Antonym + Ví dụ */}
+          <div className="absolute inset-0 flex flex-col items-center rounded-2xl shadow-xl [backface-visibility:hidden] [transform:rotateY(180deg)] p-5 overflow-y-auto" style={{ background: 'linear-gradient(180deg, #2d3748 0%, #3d5a5a 100%)' }}>
+            <span className="text-4xl font-bold text-white">{isRich ? card.kanji : card.japanese}</span>
+            {isRich && <p className="text-lg text-white/80 mt-1">{card.hiragana}</p>}
+            <div className="mt-3 text-2xl font-medium text-amber-300">
+              {card.meaning || card.vietnamese}
+            </div>
+            {isRich && card.antonym && (
+              <div className="mt-3 text-sm bg-white/10 rounded-xl p-3 w-full">
+                <span className="font-semibold text-white">Trái nghĩa:</span>{' '}
+                <span className="font-medium text-white">{card.antonym.kanji}</span> <span className="text-white/70">({card.antonym.hiragana}) – {card.antonym.meaning}</span>
+              </div>
+            )}
+            {isRich && card.examples && card.examples.length > 0 && (
+              <div className="mt-3 w-full space-y-2">
+                {card.examples.map((ex, i) => (
+                  <div key={i} className="bg-white/10 rounded-xl p-3">
+                    <div className="flex items-start justify-between">
+                      <p className="font-bold text-base text-white">{highlightWord(ex.japanese, [card.kanji!, card.hiragana || ''])}</p>
+                      <button onClick={(e) => { e.stopPropagation(); speak(ex.japanese); }} className="text-sm text-white/70 hover:text-white ml-2 shrink-0">🔊</button>
+                    </div>
+                    <p className="text-sm text-white mt-1" dangerouslySetInnerHTML={{ __html: ex.hiragana.replace(new RegExp(`(${card.hiragana || ''})`, 'g'), '<span class="text-yellow-300 font-bold">$1</span>') }} />
+                    <p className="text-sm text-white mt-1" dangerouslySetInnerHTML={{ __html: (() => {
+                      const meanings = (card.meaning || card.vietnamese || '').split(/[,、]/).map(s => s.trim()).filter(Boolean);
+                      let html = ex.meaning_vi;
+                      for (const m of meanings) {
+                        html = html.replace(new RegExp(`(${m})`, 'gi'), '<span class="text-yellow-300 font-bold">$1</span>');
+                      }
+                      return html;
+                    })() }} />
+                  </div>
+                ))}
+              </div>
+            )}
+          </div>
+        </div>
+      </div>
+
+      {/* Buttons */}
+      <div className="flex items-center gap-2 mt-2">
+        <button onClick={() => { setFlipped(false); setIndex((index - 1 + cards.length) % cards.length); }} className="px-3 py-2 rounded-xl bg-gray-200 text-gray-600 text-sm font-medium">◀ Trước</button>
+        <button onClick={() => next(false)} className="px-5 py-2 rounded-xl bg-red-500/80 text-white text-sm font-medium shadow">Chưa thuộc</button>
+        <button onClick={() => next(true)} className="px-5 py-2 rounded-xl text-white text-sm font-medium shadow" style={{ background: '#22C55E' }}>Đã thuộc ✓</button>
+        <button onClick={() => { setFlipped(false); setIndex((index + 1) % cards.length); }} className="px-3 py-2 rounded-xl bg-gray-200 text-gray-600 text-sm font-medium">Sau ▶</button>
+      </div>
+
+      <div className="mt-3 w-full max-w-sm">
+        <div className="h-1.5 bg-gray-200 rounded-full overflow-hidden">
+          <div className="h-full rounded-full transition-all" style={{ width: `${(done.size / cards.length) * 100}%`, background: '#22C55E' }} />
         </div>
       </div>
     </div>

@@ -140,6 +140,10 @@ export default function JLPTQuizPage() {
         <h1 className="text-2xl font-bold text-gray-800 mb-1">📝 JLPT Kanji Quiz</h1>
         <p className="text-sm text-gray-500 mb-5">{sessionList.reduce((a, b) => a + b.count, 0)} kanji • {sessionList.length} buổi</p>
 
+        <a href="/quiz?mode=import" className="block w-full py-4 mb-4 text-white rounded-xl font-bold text-lg shadow-md hover:shadow-lg transition-all text-center" style={{ background: '#22C55E' }}>
+          ✍️ Trắc nghiệm Kanji
+        </a>
+
         <button onClick={async () => startQuiz(await loadAllKanji())}
           className="w-full py-4 mb-6 text-white rounded-xl font-bold text-lg shadow-md hover:shadow-lg transition-all" style={{ background: '#6C63FF' }}>
           🎲 Tổng hợp tất cả ({sessionList.reduce((a, b) => a + b.count, 0)} kanji)

@@ -159,9 +159,10 @@ export default function VocabQuizPage() {
               <div className="flex flex-wrap gap-2">
                 {[...allCards.keys()].sort((a, b) => a - b).map(s => (
                   <button key={s} onClick={() => toggleSession(s)}
-                    className={`px-3 py-1.5 rounded-lg text-sm font-medium transition-all ${
-                      selectedSessions.has(s) ? 'bg-indigo-500 text-white' : 'bg-gray-100 text-gray-500'
-                    }`}>
+                    className={`px-3 py-1.5 rounded-xl text-sm font-medium transition-all ${
+                      selectedSessions.has(s) ? 'text-white shadow-sm' : 'bg-gray-100 text-gray-500'
+                    }`}
+                    style={selectedSessions.has(s) ? { background: '#6C63FF' } : {}}>
                     Buổi {s} <span className="opacity-70">({allCards.get(s)?.length})</span>
                   </button>
                 ))}
@@ -175,12 +176,12 @@ export default function VocabQuizPage() {
                   onChange={e => setQuestionCount(Math.max(1, Math.min(totalCards, Number(e.target.value) || 1)))}
                   className="w-24 px-3 py-2 border border-gray-200 rounded-lg text-sm font-medium text-center" />
                 <span className="text-xs text-gray-400">/ {totalCards} từ</span>
-                <button onClick={() => setQuestionCount(totalCards)} className="text-xs px-2 py-1 bg-indigo-100 text-indigo-600 rounded-lg font-medium">Tất cả</button>
+                <button onClick={() => setQuestionCount(totalCards)} className="text-xs px-3 py-1.5 rounded-xl font-medium text-white" style={{ background: '#6C63FF' }}>Tất cả</button>
               </div>
             </div>
 
             <button onClick={() => startQuiz()} disabled={totalCards < 4}
-              className="w-full py-3 bg-gradient-to-r from-indigo-500 to-purple-500 text-white rounded-xl font-medium shadow disabled:opacity-50">
+              className="w-full py-3.5 text-white rounded-xl font-medium shadow disabled:opacity-50" style={{ background: '#6C63FF' }}>
               🚀 Bắt đầu ({Math.min(questionCount, totalCards)} câu)
             </button>
           </>
@@ -238,29 +239,36 @@ export default function VocabQuizPage() {
 
   return (
     <div className="min-h-screen p-4 pb-24 flex flex-col items-center">
-      <h1 className="text-xl font-bold text-gray-800 mb-2">✍️ Trắc nghiệm từ vựng</h1>
-      <p className="text-sm text-gray-500 mb-6">Câu {index + 1}/{questions.length} • Đúng: {score}</p>
-
-      {/* Question card */}
-      <div className="bg-white rounded-2xl p-6 shadow-sm border border-gray-100 text-center mb-6 w-full max-w-md">
-        <p className="text-3xl font-bold text-gray-800">{q.kanji || q.japanese}</p>
-        {q.hiragana && <p className="text-sm text-gray-400 mt-1">{q.hiragana}</p>}
-        {q.romaji && <p className="text-xs text-gray-400 italic">{q.romaji}</p>}
-        <button onClick={() => speak(q.kanji || q.japanese)} className="mt-2 text-lg opacity-60 hover:opacity-100">🔊</button>
-        <p className="text-sm text-gray-400 mt-3">Chọn nghĩa đúng:</p>
+      <div className="w-full max-w-md mb-4">
+        <div className="flex items-center justify-between">
+          <h1 className="text-lg font-bold text-gray-800">✍️ Trắc nghiệm từ vựng</h1>
+          <span className="text-sm text-gray-500">Câu {index + 1}/{questions.length} • ✓{score}</span>
+        </div>
+        <p className="text-xs text-gray-400 mt-1">Chọn nghĩa đúng cho từ bên dưới</p>
       </div>
 
-      {/* 4 options */}
-      <div className="grid grid-cols-2 gap-3 w-full max-w-sm">
+      {/* Question card */}
+      <div className="rounded-2xl p-8 shadow-lg text-center mb-6 w-full max-w-md" style={{ background: 'linear-gradient(135deg, #6C63FF, #8B5CF6)' }}>
+        <p className="text-4xl font-bold text-white">{q.kanji || q.japanese}</p>
+        {q.hiragana && <p className="text-lg text-white/80 mt-2">{q.hiragana}</p>}
+        {q.romaji && <p className="text-sm text-white/60 italic">{q.romaji}</p>}
+        <button onClick={() => speak(q.kanji || q.japanese)}
+          className="mt-4 w-10 h-10 rounded-full bg-white/20 flex items-center justify-center mx-auto hover:bg-white/30 transition-all">
+          <span className="text-lg">🔊</span>
+        </button>
+      </div>
+
+      {/* 4 options - 1 column layout */}
+      <div className="flex flex-col gap-3 w-full max-w-md">
         {options.map((opt, i) => {
-          let cls = 'bg-white border-2 border-gray-200 hover:border-indigo-300';
+          let cls = 'bg-white border-2 border-gray-200 hover:border-[#6C63FF]/40';
           if (selected !== null) {
-            if (opt === correctAnswer) cls = 'bg-emerald-100 border-2 border-emerald-400';
-            else if (i === selected) cls = 'bg-red-100 border-2 border-red-400';
+            if (opt === correctAnswer) cls = 'bg-emerald-50 border-2 border-emerald-400 text-emerald-700';
+            else if (i === selected) cls = 'bg-red-50 border-2 border-red-400 text-red-700';
           }
           return (
             <button key={i} disabled={selected !== null} onClick={() => handleAnswer(i)}
-              className={`${cls} py-4 px-3 rounded-xl font-medium text-sm transition-all shadow-sm text-left`}>
+              className={`${cls} py-3.5 px-4 rounded-xl font-medium text-sm transition-all shadow-sm text-left`}>
               {opt}
             </button>
           );
@@ -269,26 +277,25 @@ export default function VocabQuizPage() {
 
       {/* Show example on correct */}
       {showExample && q.examples && (
-        <div className="mt-4 w-full max-w-sm bg-emerald-50 border border-emerald-200 rounded-xl p-4">
+        <div className="mt-4 w-full max-w-md bg-emerald-50 border border-emerald-200 rounded-xl p-4">
           <p className="text-xs font-bold text-emerald-700 mb-2">📝 Ví dụ:</p>
           {q.examples.slice(0, 1).map((ex, i) => (
             <div key={i}>
-              <p className="font-bold text-[#1a202c] text-lg">{ex.japanese}</p>
-              {ex.hiragana && <p className="text-sm text-[#2d3748]">{ex.hiragana}</p>}
-              {ex.romaji && <p className="text-xs text-[#718096] italic">{ex.romaji}</p>}
-              {ex.meaning_vi && <p className="text-sm text-[#2d3748] mt-1 font-medium">{ex.meaning_vi}</p>}
+              <p className="font-bold text-gray-800 text-lg">{ex.japanese}</p>
+              {ex.hiragana && <p className="text-sm text-gray-600">{ex.hiragana}</p>}
+              {ex.meaning_vi && <p className="text-sm text-emerald-700 mt-1 font-medium">{ex.meaning_vi}</p>}
             </div>
           ))}
-          <button onClick={goNext} className="mt-3 w-full py-2 bg-emerald-500 text-white rounded-lg text-sm font-medium">
+          <button onClick={goNext} className="mt-3 w-full py-2 text-white rounded-lg text-sm font-medium" style={{ background: '#6C63FF' }}>
             Tiếp →
           </button>
         </div>
       )}
 
-      {/* Progress bar */}
-      <div className="mt-6 w-full max-w-sm">
+      {/* Progress bar - thicker */}
+      <div className="mt-6 w-full max-w-md">
         <div className="h-2 bg-gray-200 rounded-full overflow-hidden">
-          <div className="h-full bg-indigo-500 rounded-full transition-all" style={{ width: `${((index + 1) / questions.length) * 100}%` }} />
+          <div className="h-full rounded-full transition-all" style={{ width: `${((index + 1) / questions.length) * 100}%`, background: '#6C63FF' }} />
         </div>
       </div>
     </div>

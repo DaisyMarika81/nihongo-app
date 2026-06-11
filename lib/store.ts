@@ -30,7 +30,7 @@ export function loadProgress(): Progress {
   if (typeof window === 'undefined') return defaultProgress();
   const raw = localStorage.getItem(STORAGE_KEY);
   if (!raw) return defaultProgress();
-  const p = JSON.parse(raw) as Progress;
+  const p = { ...defaultProgress(), ...JSON.parse(raw) } as Progress;
   // Reset daily counter if new day
   const today = new Date().toISOString().split('T')[0];
   if (p.todayDate !== today) {
@@ -67,7 +67,7 @@ export function reviewCardProgress(progress: Progress, cardId: string, result: R
 }
 
 export function getDueCount(progress: Progress): number {
-  return getDueCards(progress.cards).length;
+  return getDueCards(progress.cards || []).length;
 }
 
 export function getNewCardIds(allIds: string[], progress: Progress, limit = 10): string[] {

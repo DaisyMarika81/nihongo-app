@@ -47,7 +47,7 @@ export default function LessonsPage() {
   useEffect(() => {
     const p = loadProgress();
     setCurrentLesson(p.currentLesson);
-    setLearnedIds(new Set(p.cards.map((c) => c.id)));
+    setLearnedIds(new Set((p.cards || []).map((c) => c.id)));
   }, []);
 
   return (

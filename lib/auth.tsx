@@ -1,47 +1,63 @@
 'use client';
 
 import { createContext, useContext, useState, useEffect, ReactNode } from 'react';
-import { supabase } from './supabase';
-import { User } from '@supabase/supabase-js';
+
+export type UserRole = 'admin' | 'user';
+
+type AuthUser = { username: string; role: UserRole };
 
 type AuthCtx = {
-  user: User | null;
+  user: AuthUser | null;
+  role: UserRole;
   loading: boolean;
-  signIn: (email: string, password: string) => Promise<string | null>;
-  signUp: (email: string, password: string) => Promise<string | null>;
-  signOut: () => Promise<void>;
+  isAdmin: boolean;
+  signIn: (username: string, password: string) => string | null;
+  signOut: () => void;
 };
 
-const AuthContext = createContext<AuthCtx>({ user: null, loading: true, signIn: async () => null, signUp: async () => null, signOut: async () => {} });
+const ACCOUNTS: Record<string, { password: string; role: UserRole }> = {
+  admin: { password: 'admin1', role: 'admin' },
+  user: { password: '123456', role: 'user' },
+};
+
+const AuthContext = createContext<AuthCtx>({
+  user: null, role: 'user', loading: true, isAdmin: false,
+  signIn: () => null, signOut: () => {},
+});
 
 export function AuthProvider({ children }: { children: ReactNode }) {
-  const [user, setUser] = useState<User | null>(null);
+  const [user, setUser] = useState<AuthUser | null>(null);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    supabase.auth.getSession().then(({ data }) => {
-      setUser(data.session?.user ?? null);
-      setLoading(false);
-    });
-    const { data: listener } = supabase.auth.onAuthStateChange((_event, session) => {
-      setUser(session?.user ?? null);
-    });
-    return () => { listener.subscription.unsubscribe(); };
+    try {
+      const saved = localStorage.getItem('nihongo_user');
+      if (saved) setUser(JSON.parse(saved));
+    } catch {}
+    setLoading(false);
   }, []);
 
-  const signIn = async (email: string, password: string) => {
-    const { error } = await supabase.auth.signInWithPassword({ email, password });
-    return error?.message ?? null;
+  const signIn = (username: string, password: string): string | null => {
+    const account = ACCOUNTS[username];
+    if (!account || account.password !== password) return 'Sai tài khoản hoặc mật khẩu';
+    const u: AuthUser = { username, role: account.role };
+    setUser(u);
+    localStorage.setItem('nihongo_user', JSON.stringify(u));
+    return null;
   };
 
-  const signUp = async (email: string, password: string) => {
-    const { error } = await supabase.auth.signUp({ email, password });
-    return error?.message ?? null;
+  const signOut = () => {
+    setUser(null);
+    localStorage.removeItem('nihongo_user');
   };
 
-  const signOut = async () => { await supabase.auth.signOut(); };
+  const role = user?.role ?? 'user';
 
-  return <AuthContext.Provider value={{ user, loading, signIn, signUp, signOut }}>{children}</AuthContext.Provider>;
+  return (
+    <AuthContext.Provider value={{ user, role, loading, isAdmin: role === 'admin', signIn, signOut }}>
+      {children}
+    </AuthContext.Provider>
+  );
 }
 
 export const useAuth = () => useContext(AuthContext);

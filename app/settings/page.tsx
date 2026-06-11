@@ -1,10 +1,18 @@
 'use client';
 
 import { useState, useEffect } from 'react';
+import { useRouter } from 'next/navigation';
+import { useAuth } from '@/lib/auth';
 import { loadProgress, saveProgress, Progress } from '@/lib/store';
 
 export default function SettingsPage() {
+  const { isAdmin, loading } = useAuth();
+  const router = useRouter();
   const [progress, setProgress] = useState<Progress | null>(null);
+
+  useEffect(() => {
+    if (!loading && !isAdmin) router.replace('/');
+  }, [loading, isAdmin, router]);
 
   useEffect(() => { setProgress(loadProgress()); }, []);
 
@@ -43,6 +51,7 @@ export default function SettingsPage() {
   };
 
   if (!progress) return null;
+  if (!isAdmin) return null;
 
   return (
     <div className="min-h-screen p-4 pb-24">

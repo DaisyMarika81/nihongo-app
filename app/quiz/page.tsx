@@ -1,8 +1,10 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, Suspense } from 'react';
+import { useSearchParams } from 'next/navigation';
 import QuizCard from '../components/QuizCard';
-import { getQuizSets, saveQuizSet, deleteQuizSet, type QuizSet } from '../../lib/quiz-sets';
+import { getQuizSets, saveQuizSet, deleteQuizSet, reorderQuizSets, getQuizOrder, type QuizSet } from '../../lib/quiz-sets';
+import { useAuth } from '@/lib/auth';
 import { hiragana } from '../../data/hiragana';
 import { katakana } from '../../data/katakana';
 import { vocabLessons1to10 } from '../../data/vocabulary/lessons-1-10';
@@ -65,7 +67,12 @@ function generateImportQuestions(items: ImportItem[], count: number): Question[]
   });
 }
 
-export default function QuizPage() {
+export default function QuizPageWrapper() {
+  return <Suspense><QuizPage /></Suspense>;
+}
+
+function QuizPage() {
+  const { isAdmin } = useAuth();
   const [mode, setMode] = useState<QuizMode | null>(null);
   const [questions, setQuestions] = useState<Question[]>([]);
   const [current, setCurrent] = useState(0);
@@ -80,7 +87,7 @@ export default function QuizPage() {
   const [submitted, setSubmitted] = useState(false);
   // Quiz sets (Supabase)
   const [savedSets, setSavedSets] = useState<QuizSet[]>([]);
-  const [importTab, setImportTab] = useState<'paste' | 'saved'>('paste');
+  const [importTab, setImportTab] = useState<'paste' | 'saved'>('saved');
   const [quizName, setQuizName] = useState('');
   const [saveStatus, setSaveStatus] = useState<'idle' | 'saving' | 'saved' | 'error'>('idle');
   const [selectedSetIds, setSelectedSetIds] = useState<string[]>([]);
@@ -103,8 +110,28 @@ export default function QuizPage() {
   // Load saved quiz sets when import config opens
   useEffect(() => {
     if (!showImportConfig) return;
-    getQuizSets().then(setSavedSets).catch(() => {});
+    Promise.all([getQuizSets(), getQuizOrder()]).then(([sets, order]) => {
+      if (order.length) {
+        const sorted = [...sets].sort((a, b) => {
+          const ai = order.indexOf(a.id);
+          const bi = order.indexOf(b.id);
+          return (ai === -1 ? 999 : ai) - (bi === -1 ? 999 : bi);
+        });
+        setSavedSets(sorted);
+      } else {
+        setSavedSets(sets);
+      }
+    }).catch(() => {});
   }, [showImportConfig]);
+
+  // Auto-open import mode from URL
+  const searchParams = useSearchParams();
+  useEffect(() => {
+    if (searchParams.get('mode') === 'import') {
+      setMode('Import');
+      setShowImportConfig(true);
+    }
+  }, [searchParams]);
 
   async function handleSaveQuizSet() {
     const importItems = parsedImport && 'items' in parsedImport ? parsedImport.items : null;
@@ -259,16 +286,16 @@ export default function QuizPage() {
 
     return (
       <div className="min-h-screen flex flex-col items-center justify-center gap-6 p-4">
-        <h1 className="text-3xl font-bold text-gray-800">📥 Import Quiz</h1>
+        <h1 className="text-3xl font-bold text-gray-800">✍️ Trắc nghiệm Kanji</h1>
 
         {/* Tabs */}
         <div className="flex gap-2 bg-gray-100 p-1 rounded-xl">
-          <button
+          {isAdmin && <button
             onClick={() => setImportTab('paste')}
             className={`px-5 py-2 rounded-lg text-sm font-medium transition-all ${importTab === 'paste' ? 'bg-white shadow text-gray-800' : 'text-gray-500'}`}
           >
             📋 Dán JSON
-          </button>
+          </button>}
           <button
             onClick={() => setImportTab('saved')}
             className={`px-5 py-2 rounded-lg text-sm font-medium transition-all ${importTab === 'saved' ? 'bg-white shadow text-gray-800' : 'text-gray-500'}`}
@@ -325,14 +352,19 @@ export default function QuizPage() {
               <>
                 <p className="text-gray-500 text-sm text-center">Chọn một hoặc nhiều quiz để gộp lại</p>
                 <div className="flex flex-col gap-2 max-h-60 overflow-y-auto">
-                  {savedSets.map((s) => {
+                  {savedSets.map((s, idx) => {
                     const isSelected = selectedSetIds.includes(s.id);
                     return (
                       <div
                         key={s.id}
+                        draggable={isAdmin}
+                        onDragStart={(e) => { e.dataTransfer.setData('text/plain', String(idx)); }}
+                        onDragOver={(e) => { e.preventDefault(); }}
+                        onDrop={(e) => { e.preventDefault(); const from = parseInt(e.dataTransfer.getData('text/plain')); if (from === idx) return; const arr = [...savedSets]; const [item] = arr.splice(from, 1); arr.splice(idx, 0, item); setSavedSets(arr); reorderQuizSets(arr.map(s => s.id)); }}
                         className={`flex items-center gap-3 p-3 rounded-xl border-2 cursor-pointer transition-all ${isSelected ? 'border-emerald-400 bg-emerald-50' : 'border-gray-200 bg-white hover:border-gray-300'}`}
                         onClick={() => setSelectedSetIds((prev) => isSelected ? prev.filter((id) => id !== s.id) : [...prev, s.id])}
                       >
+                        {isAdmin && <span className="text-gray-300 cursor-grab active:cursor-grabbing text-lg">⠿</span>}
                         <div className={`w-5 h-5 rounded flex items-center justify-center flex-shrink-0 ${isSelected ? 'bg-emerald-500' : 'border-2 border-gray-300'}`}>
                           {isSelected && <span className="text-white text-xs">✓</span>}
                         </div>
@@ -340,12 +372,12 @@ export default function QuizPage() {
                           <div className="font-medium text-gray-800 text-sm truncate">{s.name}</div>
                           <div className="text-gray-400 text-xs">{s.items.length} từ</div>
                         </div>
-                        <button
+                        {isAdmin && <button
                           onClick={(e) => { e.stopPropagation(); handleDeleteSet(s.id); }}
                           className="text-gray-300 hover:text-red-400 transition-colors text-lg leading-none"
                         >
                           ×
-                        </button>
+                        </button>}
                       </div>
                     );
                   })}

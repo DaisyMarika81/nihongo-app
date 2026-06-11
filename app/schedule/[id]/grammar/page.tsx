@@ -2,6 +2,7 @@
 
 import { useState, useEffect } from 'react';
 import { useParams } from 'next/navigation';
+import { useAuth } from '@/lib/auth';
 import { sessionGrammar, SessionGrammar } from '@/data/session-grammar';
 import { speak } from '@/lib/speak';
 import { getSessionData, deleteSessionItem } from '@/lib/session-data';
@@ -9,6 +10,7 @@ import { supabase } from '@/lib/supabase';
 
 export default function SessionGrammarPage() {
   const { id } = useParams();
+  const { isAdmin } = useAuth();
   const sessionId = parseInt(id as string);
   const baseItems = sessionGrammar[sessionId] || [];
   const [items, setItems] = useState<SessionGrammar[]>(baseItems);
@@ -80,18 +82,18 @@ export default function SessionGrammarPage() {
     <div className="min-h-screen p-4 pb-24">
       <h1 className="text-xl font-bold text-gray-800 mb-4">📐 Ngữ pháp Buổi {sessionId}</h1>
       <p className="text-sm text-gray-500 mb-4">{allItems.length} cấu trúc</p>
-      <div className="flex gap-2 mb-6">
+      {isAdmin && <div className="flex gap-2 mb-6">
         <button onClick={() => { const json = JSON.stringify(allItems, null, 2); const blob = new Blob([json], { type: 'application/json' }); const url = URL.createObjectURL(blob); const a = document.createElement('a'); a.href = url; a.download = `grammar-buoi-${sessionId}.json`; a.click(); URL.revokeObjectURL(url); }} className="px-3 py-1.5 bg-gradient-to-r from-sky-400 to-blue-500 text-white rounded-xl text-xs font-medium shadow">📤 Export JSON</button>
         <button onClick={async () => { if (!confirm(`Xóa tất cả ngữ pháp buổi ${sessionId}?`)) return; await supabase.from('session_data').delete().eq('session_num', sessionId).eq('type', 'grammar'); setItems([]); setCustomItems([]); }} className="px-3 py-1.5 bg-gradient-to-r from-red-400 to-red-500 text-white rounded-xl text-xs font-medium shadow">🗑️ Xóa tất cả</button>
-      </div>
+      </div>}
 
       <div className="space-y-4">
         {allItems.map((g, i) => (
           <div key={g.id} className="bg-white rounded-2xl p-5 shadow-sm border border-gray-100 relative">
-            <div className="absolute top-3 right-3 flex gap-1">
-              <button onClick={() => startEdit(i)} className="text-xs text-gray-400 hover:text-indigo-600 px-2 py-1 rounded hover:bg-indigo-50">✏️</button>
-              <button onClick={() => handleDelete(i)} className="text-xs text-red-400 hover:text-red-600 px-2 py-1 rounded hover:bg-red-50">🗑️</button>
-            </div>
+            {isAdmin && <div className="absolute top-3 right-3 flex gap-1 opacity-40 hover:opacity-100 transition-opacity">
+              <button onClick={() => startEdit(i)} className="text-xs text-gray-500 hover:text-indigo-600 px-2 py-1 rounded hover:bg-gray-100">✏️</button>
+              <button onClick={() => handleDelete(i)} className="text-xs text-gray-500 hover:text-red-500 px-2 py-1 rounded hover:bg-gray-100">🗑️</button>
+            </div>}
 
             {editIdx === i ? (
               <div className="space-y-2">
@@ -114,14 +116,45 @@ export default function SessionGrammarPage() {
               <>
                 <div className="text-lg font-bold text-indigo-600 font-mono">{g.pattern}</div>
                 <div className="text-sm text-gray-600 mt-1">{g.meaning}</div>
-                {g.note && <div className="text-xs text-amber-600 bg-amber-50 px-2 py-1 rounded mt-2 inline-block">💡 {g.note}</div>}
-                <div className="mt-3 bg-gray-50 rounded-xl p-3 border border-gray-100">
+                {g.note && <div className="text-[13px] text-amber-800 bg-amber-50/80 px-4 py-3 rounded-xl mt-3 space-y-3 border border-amber-100">
+                  {g.note.split(/(?=\[)/).filter(Boolean).map((section, idx) => {
+                    const match = section.match(/^\[(.+?)\][：:]?\s*([\s\S]*)/);
+                    if (match) {
+                      const content = match[2].trim();
+                      // Check if content has numbered items (1. 2. 3.)
+                      const numbered = content.split(/(?=\d+[\.\、]\s*)/).filter(s => s.trim());
+                      if (numbered.length > 1) {
+                        return (
+                          <div key={idx}>
+                            <div className="font-bold text-amber-900 mb-1">{match[1]}:</div>
+                            <ul className="space-y-1.5 ml-1">
+                              {numbered.map((item, j) => (
+                                <li key={j} className="flex gap-2">
+                                  <span className="text-amber-500 shrink-0 font-bold">{j + 1}.</span>
+                                  <span>{item.replace(/^\d+[\.\、]\s*/, '')}</span>
+                                </li>
+                              ))}
+                            </ul>
+                          </div>
+                        );
+                      }
+                      return (
+                        <div key={idx}>
+                          <span className="font-bold text-amber-900">{match[1]}:</span>{' '}
+                          <span>{content}</span>
+                        </div>
+                      );
+                    }
+                    return <div key={idx}>💡 {section}</div>;
+                  })}
+                </div>}
+                <div className="mt-3 bg-gray-50 rounded-xl p-4 border border-gray-100">
                   <div className="flex items-center gap-2">
                     <button onClick={() => speak(g.example)} className="text-sm">🔊</button>
-                    <span className="text-sm font-medium text-gray-800">{g.example}</span>
+                    <span className="text-[15px] font-medium text-gray-800">{g.example}</span>
                   </div>
-                  <div className="text-xs text-gray-400 mt-1 italic">{g.exampleRomaji}</div>
-                  <div className="text-xs text-emerald-600 mt-1">{g.exampleMeaning}</div>
+                  <div className="text-sm text-gray-600 mt-1.5 italic font-medium">{g.exampleRomaji}</div>
+                  <div className="text-sm text-emerald-600 mt-1">{g.exampleMeaning}</div>
                 </div>
               </>
             )}

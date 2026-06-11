@@ -32,3 +32,16 @@ export async function deleteQuizSet(id: string): Promise<void> {
   const { error } = await supabase.from('quiz_sets').delete().eq('id', id);
   if (error) throw error;
 }
+
+export async function getQuizOrder(): Promise<string[]> {
+  const { data } = await supabase.from('session_data').select('items').eq('session_num', 9998).eq('type', 'flashcard').single();
+  return (data?.items as { order?: string[] })?.order || [];
+}
+
+export async function saveQuizOrder(orderedIds: string[]): Promise<void> {
+  await supabase.from('session_data').upsert({ session_num: 9998, type: 'flashcard', items: { order: orderedIds }, updated_at: new Date().toISOString() }, { onConflict: 'session_num,type' });
+}
+
+export async function reorderQuizSets(orderedIds: string[]): Promise<void> {
+  await saveQuizOrder(orderedIds);
+}

@@ -43,3 +43,12 @@ export async function getAllSessionData(): Promise<{ session_num: number; type: 
   const { data } = await supabase.from('session_data').select('session_num, type, items');
   return (data || []).map(d => ({ session_num: d.session_num, type: d.type, count: (d.items as unknown[]).length }));
 }
+
+export async function getRestrictMode(): Promise<boolean> {
+  const { data } = await supabase.from('session_data').select('items').eq('session_num', 9999).eq('type', 'flashcard').single();
+  return (data?.items as { restrict?: boolean })?.restrict ?? false;
+}
+
+export async function setRestrictMode(value: boolean): Promise<void> {
+  await supabase.from('session_data').upsert({ session_num: 9999, type: 'flashcard', items: { restrict: value }, updated_at: new Date().toISOString() }, { onConflict: 'session_num,type' });
+}

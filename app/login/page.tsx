@@ -2,21 +2,20 @@
 
 import { useState } from 'react';
 import { useRouter } from 'next/navigation';
+import { useAuth } from '@/lib/auth';
 
 export default function LoginPage() {
   const router = useRouter();
+  const { signIn } = useAuth();
   const [username, setUsername] = useState('');
   const [password, setPassword] = useState('');
   const [error, setError] = useState('');
 
   function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
-    if (username === 'admin' && password === '123456') {
-      localStorage.setItem('nihongo_auth', 'true');
-      router.push('/');
-    } else {
-      setError('Sai tài khoản hoặc mật khẩu');
-    }
+    const err = signIn(username, password);
+    if (err) setError(err);
+    else router.push('/');
   }
 
   return (

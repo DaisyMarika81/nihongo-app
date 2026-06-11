@@ -1,22 +1,21 @@
 'use client';
 
-import { useEffect, useState } from 'react';
 import { usePathname, useRouter } from 'next/navigation';
+import { useEffect } from 'react';
+import { useAuth } from '@/lib/auth';
 
 export default function AuthGuard({ children }: { children: React.ReactNode }) {
-  const [checked, setChecked] = useState(false);
+  const { user, loading } = useAuth();
   const pathname = usePathname();
   const router = useRouter();
 
   useEffect(() => {
-    const authed = localStorage.getItem('nihongo_auth') === 'true';
-    if (!authed && pathname !== '/login') {
+    if (!loading && !user && pathname !== '/login') {
       router.replace('/login');
-    } else {
-      setChecked(true);
     }
-  }, [pathname, router]);
+  }, [loading, user, pathname, router]);
 
-  if (!checked && pathname !== '/login') return null;
+  if (loading) return null;
+  if (!user && pathname !== '/login') return null;
   return <>{children}</>;
 }

@@ -1,10 +1,13 @@
 'use client';
 
+import { useState, useEffect } from 'react';
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 import { useTheme } from '@/lib/theme';
+import { useAuth } from '@/lib/auth';
+import { getRestrictMode } from '@/lib/session-data';
 
-const tabs = [
+const allTabs = [
   { href: '/', label: 'Home', icon: '🏠' },
   { href: '/schedule', label: 'Lịch học', icon: '📅' },
   { href: '/review/jlpt', label: 'Luyện Kanji', icon: '🎯' },
@@ -14,9 +17,19 @@ const tabs = [
   { href: '/quiz', label: 'Quiz', icon: '✍️' },
 ];
 
+const RESTRICTED_TABS = ['/', '/schedule', '/review/jlpt', '/quiz'];
+
 export default function Navigation() {
   const pathname = usePathname();
   const { theme, toggle } = useTheme();
+  const { isAdmin } = useAuth();
+  const [restrict, setRestrict] = useState(false);
+
+  useEffect(() => {
+    getRestrictMode().then(setRestrict);
+  }, []);
+
+  const tabs = (!isAdmin && restrict) ? allTabs.filter(t => RESTRICTED_TABS.includes(t.href)) : allTabs;
 
   return (
     <nav className="fixed bottom-0 left-0 right-0 bg-white/95 backdrop-blur-md border-t border-gray-200 shadow-lg z-50">

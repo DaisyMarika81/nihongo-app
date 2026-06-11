@@ -67,5 +67,6 @@ export function getNewCards(allIds: string[], learned: CardState[], limit: numbe
 }
 
 export function getDueCards(cards: CardState[]): CardState[] {
+  if (!cards) return [];
   return cards.filter(isDue).sort((a, b) => a.nextReview - b.nextReview);
 }

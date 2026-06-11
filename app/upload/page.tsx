@@ -1,7 +1,8 @@
 'use client';
 
 import { useState, Suspense, useCallback } from 'react';
-import { useSearchParams } from 'next/navigation';
+import { useSearchParams, useRouter } from 'next/navigation';
+import { useAuth } from '@/lib/auth';
 import { addSessionData, SessionDataType } from '@/lib/session-data';
 
 const TEMPLATES: Record<SessionDataType, string> = {
@@ -93,12 +94,16 @@ export default function UploadPage() {
 
 function UploadContent() {
   const searchParams = useSearchParams();
+  const router = useRouter();
+  const { isAdmin, loading } = useAuth();
   const sessionFromUrl = searchParams.get('session') || '1';
   const [json, setJson] = useState('');
   const [type, setType] = useState<SessionDataType>('kanji');
   const [status, setStatus] = useState<{ type: 'success' | 'error'; msg: string } | null>(null);
-  const [loading, setLoading] = useState(false);
+  const [loading2, setLoading2] = useState(false);
   const [showExample, setShowExample] = useState(false);
+
+  if (!loading && !isAdmin) { router.replace('/'); return null; }
 
   // Real-time validation
   const validation = useCallback((): { valid: boolean; error?: string; count?: number } => {
@@ -126,7 +131,7 @@ function UploadContent() {
   async function handleUpload() {
     if (!v.valid) return;
     try {
-      setLoading(true);
+      setLoading2(true);
       const items = JSON.parse(json);
       await addSessionData(parseInt(sessionFromUrl), type, items);
       setStatus({ type: 'success', msg: `✅ Đã lưu ${items.length} mục ${type} vào Buổi ${sessionFromUrl}` });
@@ -134,7 +139,7 @@ function UploadContent() {
     } catch (e: unknown) {
       setStatus({ type: 'error', msg: `❌ ${(e as Error).message}` });
     } finally {
-      setLoading(false);
+      setLoading2(false);
     }
   }
 
@@ -211,10 +216,10 @@ function UploadContent() {
       )}
 
       {/* Save button */}
-      <button onClick={handleUpload} disabled={loading || !v.valid}
+      <button onClick={handleUpload} disabled={loading2 || !v.valid}
         className={`mt-4 w-full py-3 rounded-xl font-medium shadow transition-all ${v.valid ? 'text-white' : 'bg-gray-200 text-gray-400 cursor-not-allowed'}`}
         style={v.valid ? { background: '#6C63FF' } : {}}>
-        {loading ? '⏳ Đang lưu...' : `💾 Lưu vào Buổi ${sessionFromUrl}`}
+        {loading2 ? '⏳ Đang lưu...' : `💾 Lưu vào Buổi ${sessionFromUrl}`}
       </button>
     </div>
   );

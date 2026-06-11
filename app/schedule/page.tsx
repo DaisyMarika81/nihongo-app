@@ -2,6 +2,7 @@
 
 import { useState, useEffect } from 'react';
 import Link from 'next/link';
+import { useAuth } from '@/lib/auth';
 import { sessionCards } from '@/data/session-cards';
 import { sessionGrammar } from '@/data/session-grammar';
 import { sessionKanji } from '@/data/session-kanji';
@@ -41,6 +42,7 @@ function getStatus(date: string): 'past' | 'today' | 'future' {
 }
 
 export default function SchedulePage() {
+  const { isAdmin } = useAuth();
   const [notes, setNotes] = useState<Record<number, string>>({});
   const [cloudData, setCloudData] = useState<{ session_num: number; type: string; count: number }[]>([]);
 
@@ -135,13 +137,13 @@ export default function SchedulePage() {
                         🈁 Kanji ({(sessionKanji[s.session]?.length || 0) + cloudCount(s.session, 'kanji')})
                       </Link>
                     )}
-                    <Link href={`/upload?session=${s.session}`} className="text-[10px] px-1.5 py-1 text-gray-400 hover:text-gray-600">➕</Link>
+                    {isAdmin && <Link href={`/upload?session=${s.session}`} className="text-[10px] px-1.5 py-1 text-gray-400 hover:text-gray-600">➕</Link>}
                     <Link href={`/export?session=${s.session}`} className="text-[10px] px-1.5 py-1 text-gray-400 hover:text-gray-600">🖨️</Link>
                   </div>
                 )}
                 {!hasContent && (
                   <div className="flex items-center gap-1.5 mt-2.5 pl-12">
-                    <Link href={`/upload?session=${s.session}`} className="text-[10px] px-2 py-1 text-gray-400 hover:text-gray-600 bg-gray-100 rounded-md">➕ Thêm</Link>
+                    {isAdmin && <Link href={`/upload?session=${s.session}`} className="text-[10px] px-2 py-1 text-gray-400 hover:text-gray-600 bg-gray-100 rounded-md">➕ Thêm</Link>}
                     <Link href={`/export?session=${s.session}`} className="text-[10px] px-2 py-1 text-gray-400 hover:text-gray-600 bg-gray-100 rounded-md">🖨️ In</Link>
                   </div>
                 )}
