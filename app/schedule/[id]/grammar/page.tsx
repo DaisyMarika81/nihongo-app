@@ -22,7 +22,7 @@ function highlightExample(text: string, pattern: string): string {
   if (!keywords.length) return text;
   let result = text;
   for (const kw of keywords) {
-    result = result.replace(new RegExp(`(${escapeRegex(kw)})`, 'g'), '<span style="color:#7C3AED;background:#F3E8FF;padding:2px 4px;border-radius:4px;font-weight:600">$1</span>');
+    result = result.replace(new RegExp(`(${escapeRegex(kw)})`, 'g'), '<span style="color:#7C3AED;background:#F3E8FF;padding:1px 3px;border-radius:3px;font-weight:600;display:inline-block">$1</span>');
   }
   return result;
 }
@@ -157,7 +157,7 @@ export default function SessionGrammarPage() {
                 {g.connections && g.connections.length > 0 ? (
                   <GrammarConnection connections={g.connections} pattern={g.pattern} index={i + 1} />
                 ) : (
-                  <div className="text-lg font-bold text-indigo-600 font-mono">{g.pattern}</div>
+                  <div className="text-lg font-bold text-indigo-600 font-mono break-words">{g.pattern}</div>
                 )}
 
                 {/* Meaning */}
@@ -178,7 +178,7 @@ export default function SessionGrammarPage() {
                     return (
                       <div key={key} style={{ background: '#FFF7ED', borderLeft: '4px solid #F59E0B' }} className="rounded-r-xl px-4 py-3">
                         <div className="text-sm font-bold" style={{ color: '#333' }}>{icon} {label}</div>
-                        <div className="text-sm mt-1" style={{ color: '#333' }}>{val}</div>
+                        <div className="text-sm break-words mt-1" style={{ color: '#333' }}>{val}</div>
                       </div>
                     );
                   })}
@@ -189,7 +189,7 @@ export default function SessionGrammarPage() {
                         {g.details.cases.map((item, j) => (
                           <li key={j} className="flex gap-2" style={{ color: '#333' }}>
                             <span className="text-amber-600 shrink-0 font-bold text-sm">{j + 1}.</span>
-                            <span className="text-sm">{item}</span>
+                            <span className="text-sm break-words">{item}</span>
                           </li>
                         ))}
                       </ul>
@@ -202,7 +202,7 @@ export default function SessionGrammarPage() {
                         {g.details.tense_distinction.map((item, j) => (
                           <li key={j} className="flex gap-2" style={{ color: '#333' }}>
                             <span className="text-amber-600 shrink-0 font-bold text-sm">{j + 1}.</span>
-                            <span className="text-sm">{item}</span>
+                            <span className="text-sm break-words">{item}</span>
                           </li>
                         ))}
                       </ul>
@@ -225,7 +225,7 @@ export default function SessionGrammarPage() {
                               {numbered.map((item, j) => (
                                 <li key={j} className="flex gap-2">
                                   <span className="text-amber-600 shrink-0 font-bold text-sm">{j + 1}.</span>
-                                  <span className="text-sm" style={{ color: '#333' }}>{item.replace(/^\d+[\.\、]\s*/, '')}</span>
+                                  <span className="text-sm break-words" style={{ color: '#333' }}>{item.replace(/^\d+[\.\、]\s*/, '')}</span>
                                 </li>
                               ))}
                             </ul>
@@ -244,11 +244,11 @@ export default function SessionGrammarPage() {
                 </div>}
 
                 {/* Example with grammar highlight */}
-                <div className="bg-gray-50 rounded-xl p-4 border border-gray-100 space-y-2">
+                  <div className="bg-gray-50 rounded-xl p-4 border border-gray-100 space-y-2">
                   <div className="flex items-start gap-2">
                     <button onClick={() => speak(getExampleText(g.example))} className="text-sm mt-0.5 shrink-0">🔊</button>
                     <span
-                      className="text-lg font-semibold leading-relaxed"
+                      className="text-lg font-semibold leading-relaxed break-words"
                       style={{ color: '#333' }}
                       dangerouslySetInnerHTML={{ __html: highlightExample(getExampleText(g.example), g.pattern) }}
                     />
