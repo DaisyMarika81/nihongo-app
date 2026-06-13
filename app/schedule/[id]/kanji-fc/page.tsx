@@ -307,48 +307,58 @@ export default function SessionKanjiPage() {
         </div>
       </div>
 
-      <div className="w-full flex-1 my-2 overflow-y-auto rounded-2xl shadow-xl p-4" style={{ background: 'linear-gradient(180deg, #2d3748 0%, #3d5a5a 100%)' }}>
-        <div className="flex flex-col items-center relative">
-            <span className="text-5xl font-bold text-white">{card.kanji}</span>
-            <span className="text-lg mt-0.5 font-semibold"><span className="text-white">{card.hanViet}</span> <span className="text-amber-300">— {card.meaning}</span></span>
-            <div className="text-center text-white/80 text-sm">
-              {card.onyomi && <span className="mr-2">音: {toHiragana(card.onyomi)}</span>}
-              {card.kunyomi && <span>訓: {card.kunyomi}</span>}
-            </div>
-            {card.mnemonic && (
-              <div className="mt-2 rounded-lg p-2.5 w-full" style={{ background: 'rgba(255,255,255,0.08)' }}>
-                <p className="text-sm text-white" dangerouslySetInnerHTML={{ __html: '💡 ' + card.mnemonic.replace(/\*\*(.*?)\*\*/g, '<span class="text-amber-300 font-bold">$1</span>') }} />
+      <div className="w-full flex-1 my-2 relative" style={{ perspective: '1000px' }}>
+        <div className="absolute inset-0 rounded-2xl" style={{ transformStyle: 'preserve-3d', transition: 'transform 0.3s', transform: flipped ? 'rotateY(180deg)' : 'rotateY(0deg)' }}>
+          {/* Front */}
+          <div className="absolute inset-0 rounded-2xl shadow-xl p-4 flex flex-col items-center justify-center gap-3 cursor-pointer select-none" style={{ backfaceVisibility: 'hidden', background: 'linear-gradient(180deg, #2d3748 0%, #3d5a5a 100%)' }} onClick={() => setFlipped(f => !f)}>
+            <span className="text-8xl font-bold text-white">{card.kanji}</span>
+            <span className="text-lg text-amber-300/90 font-medium">{card.hanViet} — {card.meaning}</span>
+          </div>
+          {/* Back */}
+          <div className="absolute inset-0 rounded-2xl shadow-xl p-4 overflow-y-auto cursor-pointer select-none" style={{ backfaceVisibility: 'hidden', transform: 'rotateY(180deg)', background: 'linear-gradient(180deg, #2d3748 0%, #3d5a5a 100%)' }} onClick={() => setFlipped(f => !f)}>
+            <div className="flex flex-col items-center relative w-full min-h-full">
+              <span className="text-5xl font-bold text-white">{card.kanji}</span>
+              <span className="text-lg mt-0.5 font-semibold"><span className="text-white">{card.hanViet}</span> <span className="text-amber-300">— {card.meaning}</span></span>
+              <div className="text-center text-white/80 text-sm">
+                {card.onyomi && <span className="mr-2">音: {toHiragana(card.onyomi)}</span>}
+                {card.kunyomi && <span>訓: {card.kunyomi}</span>}
               </div>
-            )}
-            {!editingMnemonic && (
-              <button onClick={(e) => { e.stopPropagation(); setMnemonicText(card.mnemonic || ''); setEditingMnemonic(true); }} className="absolute top-3 right-3 cursor-pointer text-[11px] text-white/30 hover:text-white">
-                ✏️
-              </button>
-            )}
-            {editingMnemonic && (
-              <div className="mt-1 w-full" onClick={(e) => e.stopPropagation()}>
-                <input type="text" value={mnemonicText} onChange={(e) => setMnemonicText(e.target.value)} placeholder="VD: Tay (扌) cầm vũ khí (殳) **ném**" className="w-full text-xs px-2 py-1.5 rounded-lg border border-white/20 bg-white/10 text-white placeholder-white/40 focus:outline-none" />
-                <div className="flex gap-2 mt-1">
-                  <button onClick={saveMnemonic} className="text-[11px] px-2 py-0.5 bg-emerald-400 text-white rounded">💾</button>
-                  <button onClick={() => setEditingMnemonic(false)} className="text-[11px] px-2 py-0.5 bg-white/20 text-white rounded">✕</button>
+              {card.mnemonic && (
+                <div className="mt-2 rounded-lg p-2.5 w-full" style={{ background: 'rgba(255,255,255,0.08)' }}>
+                  <p className="text-sm text-white" dangerouslySetInnerHTML={{ __html: '💡 ' + card.mnemonic.replace(/\*\*(.*?)\*\*/g, '<span class="text-amber-300 font-bold">$1</span>') }} />
                 </div>
-              </div>
-            )}
-            {/* Vocab */}
-            <div className="mt-2 w-full space-y-1.5 flex-1">
-              {card.vocab.map((v, i) => (
-                  <div key={i} className="rounded-lg p-2.5 relative" style={{ background: 'rgba(255,255,255,0.08)' }}>
-                    <span className="absolute top-1.5 right-2 text-[9px] text-white/25">{i + 1}</span>
-                    <div className="min-w-0">
-                      <div className="text-[15px] font-bold text-white" dangerouslySetInnerHTML={{ __html: v.word.replace(new RegExp(`(${v.highlight || card.kanji})`, 'g'), '<span style="color:#facc15">$1</span>') }} />
-                      <div className="text-[11px] text-white/40 mt-0.5" dangerouslySetInnerHTML={{ __html: v.highlightReading ? v.reading.replace(new RegExp(`(${v.highlightReading})`, 'g'), '<span style="color:#facc15">$1</span>') : v.reading }} />
-                      <div className="text-xs text-white/70 mt-0.5" dangerouslySetInnerHTML={{ __html: v.highlightMeaning ? v.meaning.replace(new RegExp(`(${v.highlightMeaning})`, 'gi'), '<span style="color:#facc15">$1</span>') : v.meaning }} />
-                    </div>
+              )}
+              {!editingMnemonic && (
+                <button onClick={(e) => { e.stopPropagation(); setMnemonicText(card.mnemonic || ''); setEditingMnemonic(true); }} className="absolute top-1 right-1 cursor-pointer text-[11px] text-white/30 hover:text-white">
+                  ✏️
+                </button>
+              )}
+              {editingMnemonic && (
+                <div className="mt-1 w-full" onClick={(e) => e.stopPropagation()}>
+                  <input type="text" value={mnemonicText} onChange={(e) => setMnemonicText(e.target.value)} placeholder="VD: Tay (扌) cầm vũ khí (殳) **ném**" className="w-full text-xs px-2 py-1.5 rounded-lg border border-white/20 bg-white/10 text-white placeholder-white/40 focus:outline-none" />
+                  <div className="flex gap-2 mt-1">
+                    <button onClick={saveMnemonic} className="text-[11px] px-2 py-0.5 bg-emerald-400 text-white rounded">💾</button>
+                    <button onClick={() => setEditingMnemonic(false)} className="text-[11px] px-2 py-0.5 bg-white/20 text-white rounded">✕</button>
                   </div>
-              ))}
+                </div>
+              )}
+              {/* Vocab */}
+              <div className="mt-2 w-full space-y-1.5">
+                {card.vocab.map((v, i) => (
+                    <div key={i} className="rounded-lg p-2.5 relative" style={{ background: 'rgba(255,255,255,0.08)' }}>
+                      <span className="absolute top-1.5 right-2 text-[9px] text-white/25">{i + 1}</span>
+                      <div className="min-w-0">
+                        <div className="text-[15px] font-bold text-white" dangerouslySetInnerHTML={{ __html: v.word.replace(new RegExp(`(${v.highlight || card.kanji})`, 'g'), '<span style="color:#facc15">$1</span>') }} />
+                        <div className="text-[11px] text-white/40 mt-0.5" dangerouslySetInnerHTML={{ __html: v.highlightReading ? v.reading.replace(new RegExp(`(${v.highlightReading})`, 'g'), '<span style="color:#facc15">$1</span>') : v.reading }} />
+                        <div className="text-xs text-white/70 mt-0.5" dangerouslySetInnerHTML={{ __html: v.highlightMeaning ? v.meaning.replace(new RegExp(`(${v.highlightMeaning})`, 'gi'), '<span style="color:#facc15">$1</span>') : v.meaning }} />
+                      </div>
+                    </div>
+                ))}
+              </div>
             </div>
           </div>
         </div>
+      </div>
       <div className="flex items-center gap-2 mb-2">
         <button onClick={() => { setIndex((index - 1 + cards.length) % cards.length); }} className="px-3 py-2 rounded-xl bg-gray-200 text-gray-600 text-sm font-medium">◀ Trước</button>
         <button onClick={() => next(false)} className="px-5 py-2 rounded-xl bg-red-500/80 text-white text-sm font-medium shadow">Chưa thuộc</button>

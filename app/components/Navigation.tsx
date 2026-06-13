@@ -10,14 +10,12 @@ import { getRestrictMode } from '@/lib/session-data';
 const allTabs = [
   { href: '/', label: 'Home', icon: '🏠' },
   { href: '/schedule', label: 'Lịch học', icon: '📅' },
+  { href: '/grammar-reference', label: 'Ngữ pháp', icon: '📖' },
+  { href: '/conjugation-reference', label: 'Chia ĐT', icon: '🔄' },
   { href: '/review/jlpt', label: 'Luyện Kanji', icon: '🎯' },
-  { href: '/practice', label: 'Luyện', icon: '🎯' },
-  { href: '/chat', label: 'AI', icon: '🤖' },
-  { href: '/kanji', label: 'Kanji', icon: '🈁' },
-  { href: '/quiz', label: 'Quiz', icon: '✍️' },
 ];
 
-const RESTRICTED_TABS = ['/', '/schedule', '/review/jlpt', '/quiz'];
+const RESTRICTED_TABS = ['/', '/schedule', '/grammar-reference', '/conjugation-reference', '/review/jlpt'];
 
 export default function Navigation() {
   const pathname = usePathname();

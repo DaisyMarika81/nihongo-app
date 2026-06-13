@@ -118,7 +118,7 @@ export default function Home() {
         </Link>
         <Link href="/quiz?mode=import" className="flex flex-col items-center justify-center py-6 rounded-xl border border-gray-100 bg-white hover:border-[#6C63FF]/30 hover:shadow-md transition-all">
           <span className="text-3xl mb-2">✍️</span>
-          <span className="text-sm font-semibold text-gray-700">Trắc nghiệm Kanji</span>
+          <span className="text-sm font-semibold text-gray-700">TN Kanji theo nghĩa</span>
         </Link>
         <Link href="/schedule/quiz" className="flex flex-col items-center justify-center py-6 rounded-xl border border-gray-100 bg-white hover:border-[#6C63FF]/30 hover:shadow-md transition-all">
           <span className="text-3xl mb-2">📝</span>
@@ -138,7 +138,7 @@ export default function Home() {
       </div>
 
       {/* Daily Tasks - collapsible */}
-      {!restrictUser && (
+      {/* {!restrictUser && (
       <div>
         <button onClick={() => setShowTasks(!showTasks)} className="w-full flex items-center justify-between mb-3">
           <h2 className="font-semibold text-gray-700">📋 Phiên học hôm nay</h2>
@@ -175,7 +175,7 @@ export default function Home() {
           </ul>
         )}
       </div>
-      )}
+      )} */}
 
       {/* Admin: Restrict toggle */}
       {isAdmin && (
@@ -188,12 +188,13 @@ export default function Home() {
         </div>
       )}
 
-      {/* Secondary links */}
+      {/* Chức năng phụ */}
       {!restrictUser && (
       <div className="flex gap-3">
-        <Link href="/flashcard" className="flex-1 text-center text-xs text-gray-400 hover:text-gray-600 py-2 rounded-xl border border-gray-100 bg-white">📇 Ôn tập</Link>
-        {isAdmin && <Link href="/settings" className="flex-1 text-center text-xs text-gray-400 hover:text-gray-600 py-2 rounded-xl border border-gray-100 bg-white">⚙️ Cài đặt</Link>}
+        <Link href="/grammar-reference" className="flex-1 text-center text-xs text-gray-400 hover:text-gray-600 py-2 rounded-xl border border-gray-100 bg-white">📖 Ngữ pháp</Link>
+        <Link href="/conjugation-reference" className="flex-1 text-center text-xs text-gray-400 hover:text-gray-600 py-2 rounded-xl border border-gray-100 bg-white">🔄 Chia ĐT</Link>
         <Link href="/tips" className="flex-1 text-center text-xs text-gray-400 hover:text-gray-600 py-2 rounded-xl border border-gray-100 bg-white">💡 Mẹo</Link>
+        <Link href="/more" className="flex-1 text-center text-xs text-gray-400 hover:text-gray-600 py-2 rounded-xl border border-gray-100 bg-white">📎 Thêm</Link>
       </div>
       )}
     </main>
