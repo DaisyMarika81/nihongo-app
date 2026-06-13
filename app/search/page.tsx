@@ -5,7 +5,7 @@ import { vocabLessons1to10 } from '@/data/vocabulary/lessons-1-10';
 import { vocabLessons11to25 } from '@/data/vocabulary/lessons-11-25';
 import { vocabLessons26to40 } from '@/data/vocabulary/lessons-26-40';
 import { vocabLessons41to50 } from '@/data/vocabulary/lessons-41-50';
-import { sessionGrammar } from '@/data/session-grammar';
+import { sessionGrammar, getExampleText, getExampleMeaning } from '@/data/session-grammar';
 import { speak } from '@/lib/speak';
 
 const allVocab = [...vocabLessons1to10, ...vocabLessons11to25, ...vocabLessons26to40, ...vocabLessons41to50];
@@ -26,7 +26,8 @@ export default function SearchPage() {
 
   const grammarResults = query.length < 1 ? [] : allGrammar.filter((g) => {
     const q = query.toLowerCase();
-    return g.pattern.toLowerCase().includes(q) || g.meaning.toLowerCase().includes(q) || g.example.includes(q);
+    const exText = getExampleText(g.example);
+    return g.pattern.toLowerCase().includes(q) || g.meaning.toLowerCase().includes(q) || exText.includes(q);
   }).slice(0, 30);
 
   return (
@@ -84,10 +85,10 @@ export default function SearchPage() {
               <div className="text-sm text-gray-600 mt-1">{g.meaning}</div>
               <div className="mt-2 bg-gray-50 rounded-xl p-2 border border-gray-100">
                 <div className="flex items-center gap-2">
-                  <button onClick={() => speak(g.example)} className="text-sm">🔊</button>
-                  <span className="text-xs text-gray-700">{g.example}</span>
+                  <button onClick={() => speak(getExampleText(g.example))} className="text-sm">🔊</button>
+                  <span className="text-xs text-gray-700">{getExampleText(g.example)}</span>
                 </div>
-                <div className="text-xs text-emerald-600 mt-1">{g.exampleMeaning}</div>
+                <div className="text-xs text-emerald-600 mt-1">{getExampleMeaning(g.example, g.exampleMeaning)}</div>
               </div>
             </div>
           ))}

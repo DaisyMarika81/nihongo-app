@@ -28,6 +28,8 @@ function highlightWord(text: string, words: string[]) {
   return <>{text}</>;
 }
 
+function escapeRegex(s: string) { return s.replace(/[.*+?^${}()|[\]\\]/g, '\\$&'); }
+
 function shuffle<T>(arr: T[]): T[] {
   const a = [...arr];
   for (let i = a.length - 1; i > 0; i--) {
@@ -323,13 +325,13 @@ export default function SessionFlashCard() {
                   <div className="mt-2 ml-10 space-y-1.5">
                     {c.examples.map((ex, j) => (
                       <div key={j} className="bg-gray-50 rounded-lg p-2.5">
-                        <p className="text-sm font-medium text-gray-800" dangerouslySetInnerHTML={{ __html: ex.japanese.replace(new RegExp(`(${c.kanji || ''})`, 'g'), '<span class="text-amber-500 font-bold">$1</span>') }} />
-                        <p className="text-xs text-gray-600" dangerouslySetInnerHTML={{ __html: ex.hiragana.replace(new RegExp(`(${c.hiragana || ''})`, 'g'), '<span class="text-amber-500 font-bold">$1</span>') }} />
+                        <p className="text-sm font-medium text-gray-800" dangerouslySetInnerHTML={{ __html: c.kanji ? ex.japanese.replace(new RegExp(`(${escapeRegex(c.kanji)})`, 'g'), '<span class="text-amber-500 font-bold">$1</span>') : ex.japanese }} />
+                        <p className="text-xs text-gray-600" dangerouslySetInnerHTML={{ __html: c.hiragana ? ex.hiragana.replace(new RegExp(`(${escapeRegex(c.hiragana)})`, 'g'), '<span class="text-amber-500 font-bold">$1</span>') : ex.hiragana }} />
                         <p className="text-xs text-gray-600" dangerouslySetInnerHTML={{ __html: (() => {
                           const meanings = (c.meaning || c.vietnamese || '').split(/[,、]/).map(s => s.trim()).filter(Boolean);
                           let html = ex.meaning_vi;
                           for (const m of meanings) {
-                            html = html.replace(new RegExp(`(${m})`, 'gi'), '<span class="text-amber-500 font-bold">$1</span>');
+                            html = html.replace(new RegExp(`(${escapeRegex(m)})`, 'gi'), '<span class="text-amber-500 font-bold">$1</span>');
                           }
                           return html;
                         })() }} />
@@ -510,12 +512,12 @@ export default function SessionFlashCard() {
                       <p className="font-bold text-base text-white">{highlightWord(ex.japanese, [card.kanji!, card.hiragana || ''])}</p>
                       <button onClick={(e) => { e.stopPropagation(); speak(ex.japanese); }} className="text-sm text-white/70 hover:text-white ml-2 shrink-0">🔊</button>
                     </div>
-                    <p className="text-sm text-white mt-1" dangerouslySetInnerHTML={{ __html: ex.hiragana.replace(new RegExp(`(${card.hiragana || ''})`, 'g'), '<span class="text-yellow-300 font-bold">$1</span>') }} />
+                    <p className="text-sm text-white mt-1" dangerouslySetInnerHTML={{ __html: card.hiragana ? ex.hiragana.replace(new RegExp(`(${escapeRegex(card.hiragana)})`, 'g'), '<span class="text-yellow-300 font-bold">$1</span>') : ex.hiragana }} />
                     <p className="text-sm text-white mt-1" dangerouslySetInnerHTML={{ __html: (() => {
                       const meanings = (card.meaning || card.vietnamese || '').split(/[,、]/).map(s => s.trim()).filter(Boolean);
                       let html = ex.meaning_vi;
                       for (const m of meanings) {
-                        html = html.replace(new RegExp(`(${m})`, 'gi'), '<span class="text-yellow-300 font-bold">$1</span>');
+                        html = html.replace(new RegExp(`(${escapeRegex(m)})`, 'gi'), '<span class="text-yellow-300 font-bold">$1</span>');
                       }
                       return html;
                     })() }} />

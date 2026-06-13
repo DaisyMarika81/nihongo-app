@@ -250,8 +250,8 @@ export default function VocabQuizPage() {
       {/* Question card */}
       <div className="rounded-2xl p-8 shadow-lg text-center mb-6 w-full max-w-md" style={{ background: 'linear-gradient(135deg, #6C63FF, #8B5CF6)' }}>
         <p className="text-4xl font-bold text-white">{q.kanji || q.japanese}</p>
-        {q.hiragana && <p className="text-lg text-white/80 mt-2">{q.hiragana}</p>}
-        {q.romaji && <p className="text-sm text-white/60 italic">{q.romaji}</p>}
+        {/* {q.hiragana && <p className="text-lg text-white/80 mt-2">{q.hiragana}</p>}
+        {q.romaji && <p className="text-sm text-white/60 italic">{q.romaji}</p>} */}
         <button onClick={() => speak(q.kanji || q.japanese)}
           className="mt-4 w-10 h-10 rounded-full bg-white/20 flex items-center justify-center mx-auto hover:bg-white/30 transition-all">
           <span className="text-lg">🔊</span>

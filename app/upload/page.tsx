@@ -12,7 +12,16 @@ const TEMPLATES: Record<SessionDataType, string> = {
   grammar: `[
   {
     "pattern": "",
+    "connections": [
+      { "type": "V-る", "note": "" },
+      { "type": "V-ない", "note": "" }
+    ],
     "meaning": "",
+    "details": {
+      "nature": "",
+      "exception": "",
+      "tense_distinction": [""]
+    },
     "example": "",
     "exampleRomaji": "",
     "exampleMeaning": "",
@@ -65,12 +74,26 @@ const EXAMPLES: Record<SessionDataType, string> = {
 ]`,
   grammar: `[
   {
-    "pattern": "Vて + います",
-    "meaning": "Đang làm V (trạng thái tiếp diễn)",
-    "example": "今 本を 読んでいます。",
-    "exampleRomaji": "Ima hon wo yonde imasu.",
-    "exampleMeaning": "Bây giờ tôi đang đọc sách.",
-    "note": "Dùng cho hành động đang diễn ra"
+    "pattern": "～ことにしている",
+    "connections": [
+      { "type": "V-る", "note": "" },
+      { "type": "V-ない", "note": "" }
+    ],
+    "meaning": "Cố gắng/Quyết tâm (thói quen chủ quan)",
+    "details": {
+      "nature": "Diễn tả thói quen mang tính CHỦ QUAN do ý chí bản thân tự đặt ra",
+      "exception": "Không dùng cho thói quen hiển nhiên/tự nhiên",
+      "tense_distinction": [
+        "「～ことにする」: Quyết định ngay tại thời điểm nói",
+        "「～ことにした」: Nhấn mạnh thời điểm đã quyết định",
+        "「～ことにしている」: Hành động đã thành thói quen"
+      ]
+    },
+    "example": {
+      "japanese": "毎日、寝る前に、リキアプリでのビデオを見ることにしている。",
+      "romaji": "Mainichi, neru mae ni, riki apuri de no bideo wo miru koto ni shite iru.",
+      "vietnamese": "Mỗi ngày, trước khi ngủ, tôi đều xem video trên Riki."
+    }
   }
 ]`,
   kanji: `[

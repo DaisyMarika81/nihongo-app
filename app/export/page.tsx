@@ -3,7 +3,7 @@
 import { useState, useEffect, Suspense } from 'react';
 import { useSearchParams } from 'next/navigation';
 import { sessionCards } from '@/data/session-cards';
-import { sessionGrammar } from '@/data/session-grammar';
+import { sessionGrammar, SessionGrammar, getExampleText, getExampleMeaning } from '@/data/session-grammar';
 import { sessionKanji } from '@/data/session-kanji';
 import { getSessionData } from '@/lib/session-data';
 
@@ -16,7 +16,7 @@ function ExportContent() {
   const sessionId = parseInt(searchParams.get('session') || '1');
   const [tab, setTab] = useState<'flashcard' | 'grammar' | 'kanji'>('flashcard');
   const [cloudFC, setCloudFC] = useState<{ japanese: string; vietnamese: string }[]>([]);
-  const [cloudGR, setCloudGR] = useState<{ pattern: string; meaning: string; example: string; exampleMeaning: string }[]>([]);
+  const [cloudGR, setCloudGR] = useState<SessionGrammar[]>([]);
   const [cloudKJ, setCloudKJ] = useState<{ kanji: string; hanViet: string; meaning: string }[]>([]);
 
   useEffect(() => {
@@ -81,8 +81,8 @@ function ExportContent() {
               <div key={i} className="border border-gray-200 rounded-lg p-3">
                 <div className="font-bold text-indigo-700">{i + 1}. {g.pattern}</div>
                 <div className="text-sm text-gray-600">{g.meaning}</div>
-                <div className="text-xs text-gray-500 mt-1 italic">例: {g.example}</div>
-                <div className="text-xs text-emerald-600">{g.exampleMeaning}</div>
+                <div className="text-xs text-gray-500 mt-1 italic">例: {getExampleText(g.example)}</div>
+                <div className="text-xs text-emerald-600">{getExampleMeaning(g.example, g.exampleMeaning)}</div>
               </div>
             ))}
           </div>

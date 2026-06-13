@@ -3,10 +3,47 @@
 import { useState, useEffect } from 'react';
 import { useParams } from 'next/navigation';
 import { useAuth } from '@/lib/auth';
-import { sessionGrammar, SessionGrammar } from '@/data/session-grammar';
+import { sessionGrammar, SessionGrammar, getExampleText, getExampleRomaji, getExampleMeaning } from '@/data/session-grammar';
 import { speak } from '@/lib/speak';
 import { getSessionData, deleteSessionItem } from '@/lib/session-data';
 import { supabase } from '@/lib/supabase';
+import GrammarConnection from '@/app/components/GrammarConnection';
+
+function escapeRegex(s: string) { return s.replace(/[.*+?^${}()|[\]\\]/g, '\\$&'); }
+
+function getPatternKeywords(pattern: string): string[] {
+  const cleaned = pattern.replace(/^.*～/, '');
+  const parts = cleaned.split('…').filter(p => p.trim().length >= 2);
+  return parts.length ? parts.map(p => p.trim()) : [];
+}
+
+function highlightExample(text: string, pattern: string): string {
+  const keywords = getPatternKeywords(pattern);
+  if (!keywords.length) return text;
+  let result = text;
+  for (const kw of keywords) {
+    result = result.replace(new RegExp(`(${escapeRegex(kw)})`, 'g'), '<span style="color:#7C3AED;background:#F3E8FF;padding:2px 4px;border-radius:4px;font-weight:600">$1</span>');
+  }
+  return result;
+}
+
+function AdminMenu({ onEdit, onDelete }: { onEdit: () => void; onDelete: () => void }) {
+  const [open, setOpen] = useState(false);
+  return (
+    <div className="absolute top-4 right-4">
+      <button onClick={() => setOpen(!open)} className="w-7 h-7 flex items-center justify-center rounded-md text-gray-400 hover:text-gray-600 hover:bg-gray-100 transition-colors">
+        <span className="text-sm font-bold">⋯</span>
+      </button>
+      {open && <>
+        <div className="fixed inset-0 z-10" onClick={() => setOpen(false)} />
+        <div className="absolute right-0 top-9 z-20 bg-white rounded-xl shadow-lg border border-gray-100 py-1 min-w-[120px]">
+          <button onClick={() => { onEdit(); setOpen(false); }} className="w-full flex items-center gap-2 px-3 py-2 text-sm text-gray-700 hover:bg-gray-50 transition-colors">✏️ Sửa</button>
+          <button onClick={() => { onDelete(); setOpen(false); }} className="w-full flex items-center gap-2 px-3 py-2 text-sm text-red-600 hover:bg-red-50 transition-colors">🗑️ Xóa</button>
+        </div>
+      </>}
+    </div>
+  );
+}
 
 export default function SessionGrammarPage() {
   const { id } = useParams();
@@ -89,11 +126,8 @@ export default function SessionGrammarPage() {
 
       <div className="space-y-4">
         {allItems.map((g, i) => (
-          <div key={g.id} className="bg-white rounded-2xl p-5 shadow-sm border border-gray-100 relative">
-            {isAdmin && <div className="absolute top-3 right-3 flex gap-1 opacity-40 hover:opacity-100 transition-opacity">
-              <button onClick={() => startEdit(i)} className="text-xs text-gray-500 hover:text-indigo-600 px-2 py-1 rounded hover:bg-gray-100">✏️</button>
-              <button onClick={() => handleDelete(i)} className="text-xs text-gray-500 hover:text-red-500 px-2 py-1 rounded hover:bg-gray-100">🗑️</button>
-            </div>}
+          <div key={g.id} className="bg-white rounded-2xl p-4 shadow-sm border border-gray-100 relative">
+            {isAdmin && <AdminMenu onEdit={() => startEdit(i)} onDelete={() => handleDelete(i)} />}
 
             {editIdx === i ? (
               <div className="space-y-2">
@@ -101,9 +135,9 @@ export default function SessionGrammarPage() {
                   className="w-full px-3 py-2 border rounded-lg text-sm font-mono" placeholder="Pattern" />
                 <input value={editData.meaning || ''} onChange={e => setEditData({ ...editData, meaning: e.target.value })}
                   className="w-full px-3 py-2 border rounded-lg text-sm" placeholder="Meaning" />
-                <input value={editData.example || ''} onChange={e => setEditData({ ...editData, example: e.target.value })}
-                  className="w-full px-3 py-2 border rounded-lg text-sm" placeholder="Example" />
-                <input value={editData.exampleMeaning || ''} onChange={e => setEditData({ ...editData, exampleMeaning: e.target.value })}
+                <input value={typeof editData.example === 'string' ? (editData.example || '') : (editData.example?.japanese || '')} onChange={e => setEditData({ ...editData, example: e.target.value })}
+                  className="w-full px-3 py-2 border rounded-lg text-sm" placeholder="Example (Japanese)" />
+                <input value={editData.exampleMeaning || (typeof editData.example !== 'string' ? editData.example?.vietnamese || '' : '')} onChange={e => setEditData({ ...editData, exampleMeaning: e.target.value })}
                   className="w-full px-3 py-2 border rounded-lg text-sm" placeholder="Example meaning" />
                 <input value={editData.note || ''} onChange={e => setEditData({ ...editData, note: e.target.value })}
                   className="w-full px-3 py-2 border rounded-lg text-sm" placeholder="Note (optional)" />
@@ -113,25 +147,85 @@ export default function SessionGrammarPage() {
                 </div>
               </div>
             ) : (
-              <>
-                <div className="text-lg font-bold text-indigo-600 font-mono">{g.pattern}</div>
-                <div className="text-sm text-gray-600 mt-1">{g.meaning}</div>
-                {g.note && <div className="text-[13px] text-amber-800 bg-amber-50/80 px-4 py-3 rounded-xl mt-3 space-y-3 border border-amber-100">
+              <div className="space-y-3">
+                {/* Level tag */}
+                {g.jlpt && (
+                  <span className="inline-block text-[11px] font-bold text-indigo-500 bg-indigo-50 px-2 py-0.5 rounded-md">{g.jlpt}</span>
+                )}
+
+                {/* Formula block */}
+                {g.connections && g.connections.length > 0 ? (
+                  <GrammarConnection connections={g.connections} pattern={g.pattern} index={i + 1} />
+                ) : (
+                  <div className="text-lg font-bold text-indigo-600 font-mono">{g.pattern}</div>
+                )}
+
+                {/* Meaning */}
+                <div className="text-sm mb-5" style={{ color: '#333' }}>{g.meaning}</div>
+
+                {/* Details — each section as its own card */}
+                {g.details && <div className="space-y-3">
+                  {[
+                    { key: 'nature' as const, icon: '💡', label: 'BẢN CHẤT' },
+                    { key: 'nuance' as const, icon: '🎭', label: 'Sắc thái' },
+                    { key: 'exception' as const, icon: '⚠️', label: 'Ngoại lệ' },
+                    { key: 'syntax_note' as const, icon: '🔧', label: 'Cấu trúc' },
+                    { key: 'distinction' as const, icon: '🔍', label: 'Phân biệt' },
+                    { key: 'variant_distinction' as const, icon: '🔀', label: 'Phân biệt' },
+                  ].map(({ key, icon, label }) => {
+                    const val = g.details![key];
+                    if (!val || (typeof val === 'string' && !val.trim())) return null;
+                    return (
+                      <div key={key} style={{ background: '#FFF7ED', borderLeft: '4px solid #F59E0B' }} className="rounded-r-xl px-4 py-3">
+                        <div className="text-sm font-bold" style={{ color: '#333' }}>{icon} {label}</div>
+                        <div className="text-sm mt-1" style={{ color: '#333' }}>{val}</div>
+                      </div>
+                    );
+                  })}
+                  {g.details.cases && g.details.cases.length > 0 && (
+                    <div style={{ background: '#FFF7ED', borderLeft: '4px solid #F59E0B' }} className="rounded-r-xl px-4 py-3">
+                      <div className="text-sm font-bold" style={{ color: '#333' }}>📋 Phân loại</div>
+                      <ul className="space-y-1 mt-1">
+                        {g.details.cases.map((item, j) => (
+                          <li key={j} className="flex gap-2" style={{ color: '#333' }}>
+                            <span className="text-amber-600 shrink-0 font-bold text-sm">{j + 1}.</span>
+                            <span className="text-sm">{item}</span>
+                          </li>
+                        ))}
+                      </ul>
+                    </div>
+                  )}
+                  {g.details.tense_distinction && g.details.tense_distinction.length > 0 && (
+                    <div style={{ background: '#FFF7ED', borderLeft: '4px solid #F59E0B' }} className="rounded-r-xl px-4 py-3">
+                      <div className="text-sm font-bold" style={{ color: '#333' }}>⏳ Phân biệt thì</div>
+                      <ul className="space-y-1 mt-1">
+                        {g.details.tense_distinction.map((item, j) => (
+                          <li key={j} className="flex gap-2" style={{ color: '#333' }}>
+                            <span className="text-amber-600 shrink-0 font-bold text-sm">{j + 1}.</span>
+                            <span className="text-sm">{item}</span>
+                          </li>
+                        ))}
+                      </ul>
+                    </div>
+                  )}
+                </div>}
+
+                {/* Legacy note */}
+                {g.note && <div style={{ background: '#FFF7ED', borderLeft: '4px solid #F59E0B' }} className="rounded-r-xl px-4 py-3 space-y-3">
                   {g.note.split(/(?=\[)/).filter(Boolean).map((section, idx) => {
                     const match = section.match(/^\[(.+?)\][：:]?\s*([\s\S]*)/);
                     if (match) {
                       const content = match[2].trim();
-                      // Check if content has numbered items (1. 2. 3.)
                       const numbered = content.split(/(?=\d+[\.\、]\s*)/).filter(s => s.trim());
                       if (numbered.length > 1) {
                         return (
                           <div key={idx}>
-                            <div className="font-bold text-amber-900 mb-1">{match[1]}:</div>
-                            <ul className="space-y-1.5 ml-1">
+                            <div className="text-sm font-bold" style={{ color: '#333' }}>{match[1]}:</div>
+                            <ul className="space-y-1 mt-1">
                               {numbered.map((item, j) => (
                                 <li key={j} className="flex gap-2">
-                                  <span className="text-amber-500 shrink-0 font-bold">{j + 1}.</span>
-                                  <span>{item.replace(/^\d+[\.\、]\s*/, '')}</span>
+                                  <span className="text-amber-600 shrink-0 font-bold text-sm">{j + 1}.</span>
+                                  <span className="text-sm" style={{ color: '#333' }}>{item.replace(/^\d+[\.\、]\s*/, '')}</span>
                                 </li>
                               ))}
                             </ul>
@@ -139,24 +233,30 @@ export default function SessionGrammarPage() {
                         );
                       }
                       return (
-                        <div key={idx}>
-                          <span className="font-bold text-amber-900">{match[1]}:</span>{' '}
+                        <div key={idx} className="text-sm" style={{ color: '#333' }}>
+                          <span className="font-bold">{match[1]}:</span>{' '}
                           <span>{content}</span>
                         </div>
                       );
                     }
-                    return <div key={idx}>💡 {section}</div>;
+                    return <div key={idx} className="text-sm" style={{ color: '#333' }}>💡 {section}</div>;
                   })}
                 </div>}
-                <div className="mt-3 bg-gray-50 rounded-xl p-4 border border-gray-100">
-                  <div className="flex items-center gap-2">
-                    <button onClick={() => speak(g.example)} className="text-sm">🔊</button>
-                    <span className="text-[15px] font-medium text-gray-800">{g.example}</span>
+
+                {/* Example with grammar highlight */}
+                <div className="bg-gray-50 rounded-xl p-4 border border-gray-100 space-y-2">
+                  <div className="flex items-start gap-2">
+                    <button onClick={() => speak(getExampleText(g.example))} className="text-sm mt-0.5 shrink-0">🔊</button>
+                    <span
+                      className="text-lg font-semibold leading-relaxed"
+                      style={{ color: '#333' }}
+                      dangerouslySetInnerHTML={{ __html: highlightExample(getExampleText(g.example), g.pattern) }}
+                    />
                   </div>
-                  <div className="text-sm text-gray-600 mt-1.5 italic font-medium">{g.exampleRomaji}</div>
-                  <div className="text-sm text-emerald-600 mt-1">{g.exampleMeaning}</div>
+                  <div className="text-sm italic" style={{ color: '#666' }}>{getExampleRomaji(g.example, g.exampleRomaji)}</div>
+                  <div className="text-[15px]" style={{ color: '#555' }}>{getExampleMeaning(g.example, g.exampleMeaning)}</div>
                 </div>
-              </>
+              </div>
             )}
           </div>
         ))}

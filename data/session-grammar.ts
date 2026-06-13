@@ -1,11 +1,49 @@
+export type Connection = {
+  type: string;
+  note?: string;
+};
+
+export type GrammarExample = {
+  japanese: string;
+  romaji?: string;
+  vietnamese?: string;
+};
+
+export type GrammarDetails = {
+  nature?: string;
+  nuance?: string;
+  exception?: string;
+  syntax_note?: string;
+  cases?: string[];
+  tense_distinction?: string[];
+  distinction?: string;
+  variant_distinction?: string;
+};
+
+// Helper: extract plain-text example from string | GrammarExample
+export function getExampleText(ex: string | GrammarExample): string {
+  return typeof ex === 'string' ? ex : ex.japanese || '';
+}
+
+export function getExampleRomaji(ex: string | GrammarExample, fallback = ''): string {
+  return typeof ex === 'string' ? fallback : ex.romaji || '';
+}
+
+export function getExampleMeaning(ex: string | GrammarExample, fallback = ''): string {
+  return typeof ex === 'string' ? fallback : ex.vietnamese || '';
+}
+
 export type SessionGrammar = {
   id: string;
   pattern: string;
+  connections?: Connection[];
   meaning: string;
-  example: string;
-  exampleRomaji: string;
-  exampleMeaning: string;
+  details?: GrammarDetails;
+  example: string | GrammarExample;
+  exampleRomaji?: string;
+  exampleMeaning?: string;
   note?: string;
+  jlpt?: string;
 };
 
 export const sessionGrammar: Record<number, SessionGrammar[]> = {
@@ -118,6 +156,31 @@ export const sessionGrammar: Record<number, SessionGrammar[]> = {
       example: '日本に 行く まえに、日本語を 勉強します。',
       exampleRomaji: 'Nihon ni iku mae ni, nihongo wo benkyou shimasu.',
       exampleMeaning: 'Trước khi đi Nhật, tôi sẽ học tiếng Nhật.',
+    },
+    // Demo: grammar with connections (rich format)
+    {
+      id: 'g1-10',
+      pattern: '～ことにしている',
+      jlpt: 'N3',
+      connections: [
+        { type: 'V-る', note: '' },
+        { type: 'V-ない', note: '' },
+      ],
+      meaning: 'Cố gắng / Quyết tâm (thói quen chủ quan)',
+      details: {
+        nature: 'Diễn tả thói quen mang tính CHỦ QUAN do ý chí bản thân tự đặt ra quy định cho mình và đang duy trì.',
+        exception: 'Tuyệt đối KHÔNG DÙNG cho những thói quen mang tính hiển nhiên của tự nhiên hoặc các lễ nghi, tập quán xã hội.',
+        tense_distinction: [
+          '「～ことにする」: Quyết định ngay tại thời điểm nói.',
+          '「～ことにした」: Nhấn mạnh vào thời điểm đã đưa ra quyết định.',
+          '「～ことにしている」: Hành động quyết định đã biến thành thói quen lặp đi lặp lại.',
+        ],
+      },
+      example: {
+        japanese: '毎日、寝る前に、リキアプリでのビデオを見ることにしている。',
+        romaji: 'Mainichi, neru mae ni, riki apuri de no bideo wo miru koto ni shite iru.',
+        vietnamese: 'Mỗi ngày, trước khi ngủ, tôi đều xem video trên ứng dụng Riki.',
+      },
     },
   ],
 };
