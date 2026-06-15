@@ -110,21 +110,89 @@ ruby rt { font-size: 0.6em; color: #818cf8; }
 }
 
 
-/* Tiptap editor styles */
-.ProseMirror h1 { font-size: 1.75rem; font-weight: 700; margin: 0.5em 0; }
-.ProseMirror h2 { font-size: 1.375rem; font-weight: 600; margin: 0.4em 0; }
-.ProseMirror h3 { font-size: 1.125rem; font-weight: 600; margin: 0.3em 0; }
-.ProseMirror p { margin: 0.4em 0; }
+/* ===== TipTap Editor Styles ===== */
+
+/* Headings */
+.ProseMirror h1 { font-size: 1.75rem; font-weight: 700; margin: 0.5em 0; color: #1f2937; }
+.ProseMirror h2 { font-size: 1.375rem; font-weight: 600; margin: 0.4em 0; color: #374151; }
+.ProseMirror h3 { font-size: 1.125rem; font-weight: 600; margin: 0.3em 0; color: #4b5563; }
+.ProseMirror p { margin: 0.4em 0; line-height: 1.7; }
+
+/* Placeholder */
 .ProseMirror p.is-editor-empty:first-child::before {
-  content: 'Ghi chú từ vựng khó, mẹo nhớ riêng cho buổi học này...';
+  content: attr(data-placeholder);
   color: #9ca3af;
   float: left;
   pointer-events: none;
   height: 0;
 }
+
+/* Lists */
 .ProseMirror ul { list-style: disc; padding-left: 1.5em; }
 .ProseMirror ol { list-style: decimal; padding-left: 1.5em; }
 .ProseMirror li { margin: 0.2em 0; }
+
+/* Highlight marks */
+.ProseMirror mark {
+  border-radius: 0.2em;
+  padding: 0.05em 0.2em;
+  box-decoration-break: clone;
+  -webkit-box-decoration-break: clone;
+}
+
+/* Blockquote */
+.ProseMirror blockquote {
+  border-left: 3px solid #8b5cf6;
+  padding: 0.4em 0 0.4em 1em;
+  margin: 0.6em 0;
+  background: rgba(139, 92, 246, 0.04);
+  border-radius: 0 0.5rem 0.5rem 0;
+  color: #6b7280;
+  font-style: italic;
+}
+
+/* Code block */
+.ProseMirror pre {
+  background: #1e1e2e;
+  color: #cdd6f4;
+  border-radius: 0.75rem;
+  padding: 1em 1.2em;
+  margin: 0.6em 0;
+  font-family: 'Fira Code', 'JetBrains Mono', 'Cascadia Code', 'Consolas', monospace;
+  font-size: 0.875em;
+  line-height: 1.6;
+  overflow-x: auto;
+}
+.ProseMirror pre code {
+  background: none;
+  color: inherit;
+  padding: 0;
+  border-radius: 0;
+  font-size: inherit;
+}
+
+/* Inline code */
+.ProseMirror code {
+  background: rgba(108, 99, 255, 0.08);
+  color: #6C63FF;
+  padding: 0.15em 0.4em;
+  border-radius: 0.3em;
+  font-family: 'Fira Code', 'Consolas', monospace;
+  font-size: 0.9em;
+}
+
+/* Horizontal rule */
+.ProseMirror hr {
+  border: none;
+  border-top: 2px solid #e5e7eb;
+  margin: 1.2em 0;
+}
+
+/* Underline */
+.ProseMirror u {
+  text-decoration-color: #6C63FF;
+  text-underline-offset: 3px;
+}
 
 /* TipTap Task List */
 ul[data-type="taskList"] {
@@ -153,3 +221,122 @@ ul[data-type="taskList"] li[data-checked="true"] > div > p {
   text-decoration: line-through;
   color: #9ca3af;
 }
+
+/* ===== Note Editor Toolbar ===== */
+.note-toolbar {
+  position: sticky;
+  top: 0;
+  z-index: 20;
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+}
+
+.note-toolbar-btn {
+  position: relative;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  padding: 0.35rem 0.5rem;
+  border-radius: 0.5rem;
+  font-size: 0.8125rem;
+  transition: all 0.15s ease;
+  cursor: pointer;
+  border: none;
+  background: transparent;
+  color: #6b7280;
+  min-width: 2rem;
+  height: 2rem;
+}
+.note-toolbar-btn:hover {
+  background: rgba(108, 99, 255, 0.08);
+  color: #6C63FF;
+}
+.note-toolbar-btn.active {
+  background: rgba(108, 99, 255, 0.12);
+  color: #6C63FF;
+  font-weight: 600;
+}
+
+/* Tooltip */
+.note-toolbar-btn[data-tooltip]::after {
+  content: attr(data-tooltip);
+  position: absolute;
+  bottom: calc(100% + 6px);
+  left: 50%;
+  transform: translateX(-50%) scale(0.9);
+  background: #1f2937;
+  color: #f9fafb;
+  font-size: 0.6875rem;
+  font-weight: 400;
+  padding: 0.3em 0.6em;
+  border-radius: 0.4rem;
+  white-space: nowrap;
+  opacity: 0;
+  pointer-events: none;
+  transition: all 0.15s ease;
+  z-index: 30;
+}
+.note-toolbar-btn[data-tooltip]:hover::after {
+  opacity: 1;
+  transform: translateX(-50%) scale(1);
+}
+
+/* Note Editor Footer */
+.note-footer {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 0.5rem 1rem;
+  font-size: 0.6875rem;
+  color: #9ca3af;
+  border-top: 1px solid #f3f4f6;
+}
+
+/* Note Quick Links */
+.note-quick-link {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.35rem;
+  padding: 0.4rem 0.75rem;
+  border-radius: 0.625rem;
+  font-size: 0.75rem;
+  font-weight: 500;
+  transition: all 0.2s ease;
+  text-decoration: none;
+  border: 1px solid transparent;
+}
+.note-quick-link:hover {
+  transform: translateY(-1px);
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.08);
+}
+
+/* Save indicator animation */
+@keyframes saveFlash {
+  0% { opacity: 0; transform: translateY(4px); }
+  20% { opacity: 1; transform: translateY(0); }
+  80% { opacity: 1; transform: translateY(0); }
+  100% { opacity: 0; transform: translateY(-4px); }
+}
+.save-indicator {
+  animation: saveFlash 1.5s ease forwards;
+}
+
+/* ===== Dark Mode for Note Editor ===== */
+[data-theme="dark"] .ProseMirror h1 { color: #f1f5f9; }
+[data-theme="dark"] .ProseMirror h2 { color: #e2e8f0; }
+[data-theme="dark"] .ProseMirror h3 { color: #cbd5e1; }
+[data-theme="dark"] .ProseMirror blockquote {
+  border-left-color: #8b5cf6;
+  background: rgba(139, 92, 246, 0.08);
+  color: #94a3b8;
+}
+[data-theme="dark"] .ProseMirror code {
+  background: rgba(108, 99, 255, 0.15);
+  color: #a5b4fc;
+}
+[data-theme="dark"] .ProseMirror hr { border-top-color: #374151; }
+[data-theme="dark"] .note-toolbar-btn { color: #94a3b8; }
+[data-theme="dark"] .note-toolbar-btn:hover { background: rgba(108, 99, 255, 0.15); color: #a5b4fc; }
+[data-theme="dark"] .note-toolbar-btn.active { background: rgba(108, 99, 255, 0.2); color: #a5b4fc; }
+[data-theme="dark"] .note-toolbar-btn[data-tooltip]::after { background: #374151; }
+[data-theme="dark"] .note-footer { border-top-color: rgba(255, 255, 255, 0.06); color: #64748b; }

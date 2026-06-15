@@ -12,6 +12,7 @@ import { speak } from '@/lib/speak';
 import { addBookmark, removeBookmark, isBookmarked } from '@/lib/bookmarks';
 import { getNote, saveNote } from '@/lib/notes';
 import LessonChecklist from '@/app/components/LessonChecklist';
+import Breadcrumb from '@/app/components/Breadcrumb';
 
 const allVocab = [...vocabLessons1to10, ...vocabLessons11to25, ...vocabLessons26to40, ...vocabLessons41to50];
 
@@ -47,6 +48,10 @@ export default function LessonDetailPage() {
 
   return (
     <div className="min-h-screen p-4 pb-24">
+      <Breadcrumb segments={[
+        { href: '/lessons', label: 'Bài học' },
+        { href: `/lessons/${lessonNum}`, label: `Bài ${lessonNum}` },
+      ]} />
       <h1 className="text-2xl font-bold text-gray-800">Bài {lessonNum}</h1>
 
       <LessonChecklist lessonId={lessonNum} />

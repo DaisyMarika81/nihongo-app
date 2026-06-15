@@ -9,6 +9,7 @@ import { getSessionData, deleteSessionItem } from '@/lib/session-data';
 import { supabase } from '@/lib/supabase';
 
 import { getSessionSRS, saveSessionSRS, markCard, SessionSRSCard } from '@/lib/session-srs';
+import Breadcrumb from '@/app/components/Breadcrumb';
 
 function highlightWord(text: string, words: string[]) {
   for (const word of words) {
@@ -461,6 +462,11 @@ export default function SessionFlashCard() {
 
   return (
     <div className="h-[calc(100dvh-4rem)] p-3 flex flex-col items-center">
+      <Breadcrumb segments={[
+        { href: '/schedule', label: 'Lịch học' },
+        { href: `/schedule/${sessionId}`, label: `Buổi ${sessionId}` },
+        { href: `/schedule/${sessionId}/flashcard`, label: 'Flashcard' },
+      ]} />
       <div className="flex items-center justify-between w-full max-w-md mb-1">
         <h1 className="text-xl font-bold text-gray-800">📖 Buổi {sessionId}</h1>
         <div className="flex gap-3 items-center">
