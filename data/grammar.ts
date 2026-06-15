@@ -135,7 +135,11 @@ export const grammar: GrammarEntry[] = [
   { id: 'l42-1', lesson: 42, pattern: 'V（辞書形）ために、V', meaning: 'Để V1 (mục đích) thì V2', example: '家を買うために、貯金しています。', exampleMeaning: 'Để mua nhà, tôi đang tiết kiệm.' },
   { id: 'l42-2', lesson: 42, pattern: 'N に 使います/役に立ちます', meaning: 'Dùng cho N / có ích cho N', example: 'この道具は料理に使います。', exampleMeaning: 'Dụng cụ này dùng để nấu ăn.' },
   // Lesson 43
-  { id: 'l43-1', lesson: 43, pattern: 'V そうです（様態）', meaning: 'Trông có vẻ sắp V / có vẻ adj', example: '雨が降りそうです。', exampleMeaning: 'Trông có vẻ sắp mưa.' },
+  { id: 'l43-1', lesson: 43, pattern: 'V そうです（様態）', meaning: 'Sắp V (nhìn thấy dấu hiệu sắp xảy ra)', example: '雨が降りそうです。', exampleMeaning: 'Trông có vẻ sắp mưa.' },
+  { id: 'l43-1b', lesson: 43, pattern: 'Aい そうです（様態）', meaning: 'Trông có vẻ Aい (cảm nhận trực quan)', example: 'この料理はおいしそうです。', exampleMeaning: 'Món này trông có vẻ ngon.' },
+  { id: 'l43-1c', lesson: 43, pattern: 'Aな そうです（様態）', meaning: 'Trông có vẻ Aな (cảm nhận trực quan)', example: 'この部屋は静かそうです。', exampleMeaning: 'Căn phòng này trông có vẻ yên tĩnh.' },
+  { id: 'l43-1d', lesson: 43, pattern: 'V そうにない/そうもない', meaning: 'Không nghĩ là sắp V (phủ định)', example: '雨が降りそうにないです。', exampleMeaning: 'Trông không có vẻ sắp mưa.' },
+  { id: 'l43-1e', lesson: 43, pattern: 'A くなさそう/じゃなさそう', meaning: 'Trông không có vẻ A (phủ định)', example: 'この料理はおいしくなさそうです。', exampleMeaning: 'Món này trông không có vẻ ngon.' },
   { id: 'l43-2', lesson: 43, pattern: 'V て きます', meaning: 'Đi làm V rồi quay lại', example: 'ちょっとコーヒーを買ってきます。', exampleMeaning: 'Tôi đi mua cà phê rồi quay lại.' },
   // Lesson 44
   { id: 'l44-1', lesson: 44, pattern: 'V すぎます', meaning: 'Làm V quá mức', example: '昨日お酒を飲みすぎました。', exampleMeaning: 'Hôm qua tôi uống rượu quá nhiều.' },

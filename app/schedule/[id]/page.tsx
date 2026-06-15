@@ -53,7 +53,7 @@ const TEXT_COLORS = [
   { color: '#8b5cf6', label: 'Tím' },
 ];
 
-const NOTE_TEMPLATE = `<h2>📖 Từ vựng mới</h2><p></p><h2>📐 Ngữ pháp</h2><p></p><h2>✏️ Ví dụ & Ghi chú</h2><p></p><h2>✅ Bài tập về nhà</h2><ul data-type="taskList"><li data-type="taskItem" data-checked="false"><label><input type="checkbox"></label><div><p></p></div></li></ul>`;
+const NOTE_TEMPLATE = `<h2>📖 Từ vựng mới</h2><p></p><h2>📐 Ngữ pháp</h2><p></p><h2>💡 Lưu ý trong buổi học</h2><blockquote><p>Ghi chú các điểm cần lưu ý, thắc mắc hoặc giải thích thêm từ giáo viên...</p></blockquote><h2>✏️ Ví dụ & Ghi chú</h2><p></p><h2>✅ Bài tập về nhà</h2><ul data-type="taskList"><li data-type="taskItem" data-checked="false"><label><input type="checkbox"></label><div><p>Ôn tập từ vựng buổi hôm nay</p></div></li><li data-type="taskItem" data-checked="false"><label><input type="checkbox"></label><div><p>Làm bài tập ngữ pháp</p></div></li><li data-type="taskItem" data-checked="false"><label><input type="checkbox"></label><div><p>Luyện viết Kanji</p></div></li></ul>`;
 
 function loadNotes(): Record<string, string> {
   if (typeof window === 'undefined') return {};
@@ -317,7 +317,7 @@ export default function SessionNotePage() {
 
       {/* Editor area */}
       <div className="max-w-2xl mx-auto px-4">
-        <div className="bg-white rounded-2xl border border-gray-200 shadow-sm overflow-hidden">
+        <div className="bg-white rounded-2xl border border-gray-200 shadow-sm">
           {/* Sticky Toolbar */}
           <div className="note-toolbar flex flex-wrap items-center gap-0.5 p-2 border-b border-gray-100 bg-white/80">
             {/* Undo / Redo */}
@@ -488,20 +488,22 @@ export default function SessionNotePage() {
             </ToolbarBtn>
           </div>
 
-          {/* Editor content */}
-          <div className="min-h-[450px] p-5">
-            <EditorContent
-              editor={editor}
-              className="prose prose-sm max-w-none focus:outline-none [&_.ProseMirror]:outline-none [&_.ProseMirror]:min-h-[420px]"
-            />
-          </div>
+          {/* Editor content + footer wrapper — overflow-hidden preserves bottom rounded corners */}
+          <div className="overflow-hidden rounded-b-2xl">
+            <div className="min-h-[450px] p-5">
+              <EditorContent
+                editor={editor}
+                className="prose prose-sm max-w-none focus:outline-none [&_.ProseMirror]:outline-none [&_.ProseMirror]:min-h-[420px]"
+              />
+            </div>
 
-          {/* Footer with word count & last saved */}
-          <div className="note-footer">
-            <span>{wordCount} từ</span>
-            <span>
-              {lastSaved ? `💾 ${formatLastSaved(lastSaved)}` : 'Chưa có ghi chú'}
-            </span>
+            {/* Footer with word count & last saved */}
+            <div className="note-footer">
+              <span>{wordCount} từ</span>
+              <span>
+                {lastSaved ? `💾 ${formatLastSaved(lastSaved)}` : 'Chưa có ghi chú'}
+              </span>
+            </div>
           </div>
         </div>
 

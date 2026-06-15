@@ -201,14 +201,13 @@ ul[data-type="taskList"] {
 }
 ul[data-type="taskList"] li {
   display: flex;
-  align-items: flex-start;
+  align-items: center;
   gap: 0.5rem;
   margin-bottom: 0.25rem;
 }
 ul[data-type="taskList"] li label {
   display: flex;
   align-items: center;
-  margin-top: 0.2rem;
 }
 ul[data-type="taskList"] li label input[type="checkbox"] {
   width: 1rem;

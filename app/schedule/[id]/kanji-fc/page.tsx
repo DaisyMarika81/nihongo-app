@@ -3,6 +3,7 @@
 import { useState, useEffect } from 'react';
 import { useParams } from 'next/navigation';
 import { useAuth } from '@/lib/auth';
+import Link from 'next/link';
 import { speak } from '@/lib/speak';
 import { sessionKanji, SessionKanjiEntry } from '@/data/session-kanji';
 import { getSessionData, deleteSessionItem } from '@/lib/session-data';
@@ -109,6 +110,10 @@ export default function SessionKanjiPage() {
   if (!cards.length) {
     return (
       <div className="min-h-screen p-4 pb-24 flex flex-col items-center justify-center text-center">
+        <Link href="/schedule" className="self-start text-sm text-gray-500 hover:text-indigo-500 transition-colors flex items-center gap-1 mb-4">
+          <svg width="16" height="16" viewBox="0 0 16 16" fill="none"><path d="M10 12L6 8l4-4" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/></svg>
+          Quay lại
+        </Link>
         <p className="text-4xl mb-4">📭</p>
         <p className="text-lg font-bold text-gray-800">Buổi {sessionId} chưa có Kanji</p>
         <p className="text-sm text-gray-500 mt-2">Thêm dữ liệu Kanji để bắt đầu học</p>
@@ -290,6 +295,12 @@ export default function SessionKanjiPage() {
 
   return (
     <div className="h-[calc(100dvh-4rem)] p-3 flex flex-col items-center">
+      <div className="w-full max-w-sm mb-1">
+        <Link href="/schedule" className="text-sm text-gray-500 hover:text-indigo-500 transition-colors flex items-center gap-1">
+          <svg width="16" height="16" viewBox="0 0 16 16" fill="none"><path d="M10 12L6 8l4-4" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/></svg>
+          Quay lại
+        </Link>
+      </div>
       <h1 className="text-xl font-bold text-gray-800 mb-1">🈁 Kanji Buổi {sessionId}</h1>
       {/* Progress bar */}
       <div className="w-full max-w-sm mb-1">

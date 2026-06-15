@@ -2,6 +2,7 @@
 
 import { useState, useEffect } from 'react';
 import { useParams } from 'next/navigation';
+import Link from 'next/link';
 import { useAuth } from '@/lib/auth';
 import { speak } from '@/lib/speak';
 import { sessionCards, SessionCard } from '@/data/session-cards';
@@ -213,6 +214,10 @@ export default function SessionFlashCard() {
   if (!cards.length) {
     return (
       <div className="min-h-screen p-4 pb-24 flex flex-col items-center justify-center text-center">
+        <Link href="/schedule" className="self-start text-sm text-gray-500 hover:text-indigo-500 transition-colors flex items-center gap-1 mb-4">
+          <svg width="16" height="16" viewBox="0 0 16 16" fill="none"><path d="M10 12L6 8l4-4" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/></svg>
+          Quay lại
+        </Link>
         <p className="text-4xl mb-4">📭</p>
         <p className="text-lg font-bold text-gray-800">Buổi {sessionId} chưa có flashcard</p>
         <p className="text-sm text-gray-500 mt-2">Thêm data vào file data/session-cards.ts</p>

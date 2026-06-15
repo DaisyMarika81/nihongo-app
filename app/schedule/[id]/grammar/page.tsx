@@ -4,6 +4,7 @@ import { useState, useEffect } from 'react';
 import { useParams } from 'next/navigation';
 import { useAuth } from '@/lib/auth';
 import { sessionGrammar, SessionGrammar, getExampleText, getExampleRomaji, getExampleMeaning } from '@/data/session-grammar';
+import Link from 'next/link';
 import { speak } from '@/lib/speak';
 import { getSessionData, deleteSessionItem } from '@/lib/session-data';
 import { supabase } from '@/lib/supabase';
@@ -109,6 +110,10 @@ export default function SessionGrammarPage() {
   if (!allItems.length) {
     return (
       <div className="min-h-screen p-4 pb-24 flex flex-col items-center justify-center text-center">
+        <Link href="/schedule" className="self-start text-sm text-gray-500 hover:text-indigo-500 transition-colors flex items-center gap-1 mb-4">
+          <svg width="16" height="16" viewBox="0 0 16 16" fill="none"><path d="M10 12L6 8l4-4" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/></svg>
+          Quay lại
+        </Link>
         <p className="text-4xl mb-4">📭</p>
         <p className="text-lg font-bold text-gray-800">Buổi {sessionId} chưa có ngữ pháp</p>
       </div>
@@ -117,6 +122,10 @@ export default function SessionGrammarPage() {
 
   return (
     <div className="min-h-screen p-4 pb-24">
+      <Link href="/schedule" className="text-sm text-gray-500 hover:text-indigo-500 transition-colors flex items-center gap-1 mb-2">
+        <svg width="16" height="16" viewBox="0 0 16 16" fill="none"><path d="M10 12L6 8l4-4" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/></svg>
+        Quay lại
+      </Link>
       <h1 className="text-xl font-bold text-gray-800 mb-4">📐 Ngữ pháp Buổi {sessionId}</h1>
       <p className="text-sm text-gray-500 mb-4">{allItems.length} cấu trúc</p>
       {isAdmin && <div className="flex gap-2 mb-6">

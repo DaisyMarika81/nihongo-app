@@ -72,6 +72,12 @@ const categories: Category[] = [
     emoji: '💡',
     filter: (e) => /ほうがいい|たらいい|たほう/.test(e.pattern),
   },
+  {
+    id: 'so-dang',
+    label: 'そう (様態)',
+    emoji: '👀',
+    filter: (e) => /様態|そうです|そうにない|そうもない|さそう/.test(e.pattern) || e.pattern.includes('そうです'),
+  },
 ];
 
 const particlePattern = 'に|を|が|は|で|へ|と|から|まで|より|の|も|など|や|か|て|でも|では';
