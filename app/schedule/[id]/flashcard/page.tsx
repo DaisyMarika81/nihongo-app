@@ -215,7 +215,7 @@ export default function SessionFlashCard() {
     return (
       <div className="min-h-screen p-4 pb-24 flex flex-col items-center justify-center text-center">
         <Link href="/schedule" className="self-start text-sm text-gray-500 hover:text-indigo-500 transition-colors flex items-center gap-1 mb-4">
-          <svg width="16" height="16" viewBox="0 0 16 16" fill="none"><path d="M10 12L6 8l4-4" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/></svg>
+          <svg width="16" height="16" viewBox="0 0 16 16" fill="none" aria-hidden="true"><path d="M10 12L6 8l4-4" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/></svg>
           Quay lại
         </Link>
         <p className="text-4xl mb-4">📭</p>
@@ -288,8 +288,8 @@ export default function SessionFlashCard() {
                   <span className="text-sm text-gray-500 ml-2">{c.meaning || c.vietnamese}</span>
                 </div>
                 <div className="flex gap-1">
-                  <button onClick={() => startEdit(i)} className="text-xs px-2 py-1 text-gray-400 hover:text-indigo-600 hover:bg-indigo-50 rounded">✏️</button>
-                  <button onClick={() => handleDeleteCard(i)} className="text-xs px-2 py-1 text-red-400 hover:text-red-600 hover:bg-red-50 rounded">🗑️</button>
+                  <button onClick={() => startEdit(i)} className="text-xs px-2 py-1 text-gray-400 hover:text-indigo-600 hover:bg-indigo-50 rounded" aria-label="Sửa">✏️</button>
+                  <button onClick={() => handleDeleteCard(i)} className="text-xs px-2 py-1 text-red-400 hover:text-red-600 hover:bg-red-50 rounded" aria-label="Xóa">🗑️</button>
                 </div>
               </div>
             );
@@ -325,7 +325,7 @@ export default function SessionFlashCard() {
                       <p className="text-xs text-gray-500 mt-1">↔ {c.antonym.kanji} ({c.antonym.hiragana}) – {c.antonym.meaning}</p>
                     )}
                   </div>
-                  <button onClick={() => speak(isR ? c.kanji! : c.japanese)} className="text-lg">🔊</button>
+                  <button onClick={() => speak(isR ? c.kanji! : c.japanese)} className="text-lg" aria-label="Phát âm">🔊</button>
                 </div>
                 {isR && c.examples && c.examples.length > 0 && (
                   <div className="mt-2 ml-10 space-y-1.5">
@@ -368,7 +368,7 @@ export default function SessionFlashCard() {
             return (
               <div key={i} className="flex items-center justify-between bg-white rounded-xl p-4 shadow-sm border border-gray-100">
                 <div className="flex items-center gap-3">
-                  <button onClick={() => speak(c.kanji || c.japanese)} className="text-lg">🔊</button>
+                  <button onClick={() => speak(c.kanji || c.japanese)} className="text-lg" aria-label="Phát âm">🔊</button>
                   <div>
                     <span className="font-bold text-gray-800">{c.kanji || c.japanese}</span>
                     <span className="text-sm text-gray-400 ml-1">{c.hiragana || ''}</span>
@@ -477,7 +477,7 @@ export default function SessionFlashCard() {
         <div className="flex gap-3 items-center">
           {unknown.size > 0 && <button onClick={() => setMode('unknown')} className="text-xs text-red-400">❌ {unknown.size}</button>}
           <button onClick={() => setMode('viewall')} className="text-xs text-gray-400 hover:text-indigo-500">📋 Tất cả</button>
-          {isAdmin && <button onClick={() => setManaging(true)} className="text-xs text-gray-400 hover:text-red-500">🗑️</button>}
+          {isAdmin && <button onClick={() => setManaging(true)} className="text-xs text-gray-400 hover:text-red-500" aria-label="Quản lý">🗑️</button>}
         </div>
       </div>
 
@@ -499,7 +499,7 @@ export default function SessionFlashCard() {
             <span className="font-bold text-white" style={{ fontSize: isRich ? '5rem' : '3.5rem' }}>{isRich ? card.kanji : card.japanese}</span>
             {isRich && card.hiragana && <p className="text-2xl mt-3 text-white/90">{card.hiragana}</p>}
             {isRich && card.romaji && <p className="text-sm mt-1 text-white/50 italic">{card.romaji}</p>}
-            <button onClick={(e) => { e.stopPropagation(); speak(isRich ? card.kanji! : card.japanese); }} className="mt-4 text-2xl opacity-70 hover:opacity-100 text-white">🔊</button>
+            <button onClick={(e) => { e.stopPropagation(); speak(isRich ? card.kanji! : card.japanese); }} className="mt-4 text-2xl opacity-70 hover:opacity-100 text-white" aria-label="Phát âm">🔊</button>
             <p className="mt-4 text-sm text-white/40">Tap hoặc Space để lật</p>
           </div>
           {/* Back: Nghĩa + Antonym + Ví dụ */}
@@ -521,7 +521,7 @@ export default function SessionFlashCard() {
                   <div key={i} className="bg-white/10 rounded-xl p-3">
                     <div className="flex items-start justify-between">
                       <p className="font-bold text-base text-white">{highlightWord(ex.japanese, [card.kanji!, card.hiragana || ''])}</p>
-                      <button onClick={(e) => { e.stopPropagation(); speak(ex.japanese); }} className="text-sm text-white/70 hover:text-white ml-2 shrink-0">🔊</button>
+                      <button onClick={(e) => { e.stopPropagation(); speak(ex.japanese); }} className="text-sm text-white/70 hover:text-white ml-2 shrink-0" aria-label="Phát âm">🔊</button>
                     </div>
                     <p className="text-sm text-white mt-1" dangerouslySetInnerHTML={{ __html: card.hiragana ? ex.hiragana.replace(new RegExp(`(${escapeRegex(card.hiragana)})`, 'g'), '<span class="text-yellow-300 font-bold">$1</span>') : ex.hiragana }} />
                     <p className="text-sm text-white mt-1" dangerouslySetInnerHTML={{ __html: (() => {

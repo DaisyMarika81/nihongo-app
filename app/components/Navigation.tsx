@@ -36,13 +36,13 @@ export default function Navigation() {
           const active = pathname === tab.href;
           return (
             <Link key={tab.href} href={tab.href}
-              className={`flex flex-col items-center gap-0.5 px-2 py-1 text-xs rounded-lg transition-all ${active ? 'text-rose-500 scale-110' : 'text-gray-400 hover:text-gray-600'}`}>
+              className={`flex flex-col items-center gap-0.5 px-2 py-1 text-xs rounded-lg transition-all ${active ? 'text-rose-600 scale-110' : 'text-gray-500 hover:text-gray-700'}`}>
               <span className="text-xl">{tab.icon}</span>
               <span className="font-medium">{tab.label}</span>
             </Link>
           );
         })}
-        <button onClick={toggle} className="flex flex-col items-center gap-0.5 px-2 py-1 text-xs text-gray-400 hover:text-gray-600">
+        <button onClick={toggle} className="flex flex-col items-center gap-0.5 px-2 py-1 text-xs text-gray-500 hover:text-gray-700">
           <span className="text-xl">{theme === 'light' ? '🌙' : '☀️'}</span>
           <span className="font-medium">{theme === 'light' ? 'Tối' : 'Sáng'}</span>
         </button>

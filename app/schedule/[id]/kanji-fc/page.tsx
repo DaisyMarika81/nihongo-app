@@ -111,7 +111,7 @@ export default function SessionKanjiPage() {
     return (
       <div className="min-h-screen p-4 pb-24 flex flex-col items-center justify-center text-center">
         <Link href="/schedule" className="self-start text-sm text-gray-500 hover:text-indigo-500 transition-colors flex items-center gap-1 mb-4">
-          <svg width="16" height="16" viewBox="0 0 16 16" fill="none"><path d="M10 12L6 8l4-4" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/></svg>
+          <svg width="16" height="16" viewBox="0 0 16 16" fill="none" aria-hidden="true"><path d="M10 12L6 8l4-4" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/></svg>
           Quay lại
         </Link>
         <p className="text-4xl mb-4">📭</p>
@@ -151,7 +151,7 @@ export default function SessionKanjiPage() {
                 <span className="text-2xl font-bold">{c.kanji}</span>
                 <span className="text-sm text-gray-500 ml-2">{c.hanViet} — {c.meaning}</span>
               </div>
-              <button onClick={() => handleDeleteKanji(i)} className="text-xs px-2 py-1 text-red-400 hover:text-red-600 hover:bg-red-50 rounded">🗑️</button>
+              <button onClick={() => handleDeleteKanji(i)} className="text-xs px-2 py-1 text-red-400 hover:text-red-600 hover:bg-red-50 rounded" aria-label={`Xóa ${c.kanji}`}>🗑️</button>
             </div>
           ))}
         </div>
@@ -297,8 +297,8 @@ export default function SessionKanjiPage() {
     <div className="h-[calc(100dvh-4rem)] p-3 flex flex-col items-center">
       <div className="w-full max-w-sm mb-1">
         <Link href="/schedule" className="text-sm text-gray-500 hover:text-indigo-500 transition-colors flex items-center gap-1">
-          <svg width="16" height="16" viewBox="0 0 16 16" fill="none"><path d="M10 12L6 8l4-4" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/></svg>
-          Quay lại
+<svg width="16" height="16" viewBox="0 0 16 16" fill="none" aria-hidden="true"><path d="M10 12L6 8l4-4" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/></svg>
+            Quay lại
         </Link>
       </div>
       <h1 className="text-xl font-bold text-gray-800 mb-1">🈁 Kanji Buổi {sessionId}</h1>
@@ -340,7 +340,7 @@ export default function SessionKanjiPage() {
                 </div>
               )}
               {!editingMnemonic && (
-                <button onClick={(e) => { e.stopPropagation(); setMnemonicText(card.mnemonic || ''); setEditingMnemonic(true); }} className="absolute top-1 right-1 cursor-pointer text-[11px] text-white/30 hover:text-white">
+                <button onClick={(e) => { e.stopPropagation(); setMnemonicText(card.mnemonic || ''); setEditingMnemonic(true); }} className="absolute top-1 right-1 cursor-pointer text-[11px] text-white/30 hover:text-white" aria-label="Sửa ghi nhớ">
                   ✏️
                 </button>
               )}
@@ -348,8 +348,8 @@ export default function SessionKanjiPage() {
                 <div className="mt-1 w-full" onClick={(e) => e.stopPropagation()}>
                   <input type="text" value={mnemonicText} onChange={(e) => setMnemonicText(e.target.value)} placeholder="VD: Tay (扌) cầm vũ khí (殳) **ném**" className="w-full text-xs px-2 py-1.5 rounded-lg border border-white/20 bg-white/10 text-white placeholder-white/40 focus:outline-none" />
                   <div className="flex gap-2 mt-1">
-                    <button onClick={saveMnemonic} className="text-[11px] px-2 py-0.5 bg-emerald-400 text-white rounded">💾</button>
-                    <button onClick={() => setEditingMnemonic(false)} className="text-[11px] px-2 py-0.5 bg-white/20 text-white rounded">✕</button>
+                    <button onClick={saveMnemonic} className="text-[11px] px-2 py-0.5 bg-emerald-400 text-white rounded" aria-label="Lưu ghi nhớ">💾</button>
+                    <button onClick={() => setEditingMnemonic(false)} className="text-[11px] px-2 py-0.5 bg-white/20 text-white rounded" aria-label="Hủy">✕</button>
                   </div>
                 </div>
               )}

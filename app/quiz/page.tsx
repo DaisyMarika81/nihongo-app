@@ -91,6 +91,25 @@ function QuizPage() {
   const [quizName, setQuizName] = useState('');
   const [saveStatus, setSaveStatus] = useState<'idle' | 'saving' | 'saved' | 'error'>('idle');
   const [selectedSetIds, setSelectedSetIds] = useState<string[]>([]);
+  const [filterLevel, setFilterLevel] = useState<string | null>(null);
+
+  function extractLevel(name: string): string | null {
+    const match = name.match(/-+\s*(N[1-5])\s*$/i);
+    return match ? match[1].toUpperCase() : null;
+  }
+
+  const levels = (() => {
+    const map = new Map<string, number>();
+    for (const s of savedSets) {
+      const l = extractLevel(s.name);
+      if (l) map.set(l, (map.get(l) || 0) + 1);
+    }
+    return [...map.entries()].sort(([a], [b]) => a.localeCompare(b));
+  })();
+
+  const filteredSets = filterLevel
+    ? savedSets.filter((s) => extractLevel(s.name) === filterLevel)
+    : savedSets;
 
   const parsedImport = (() => {
     if (!importJson.trim()) return null;
@@ -121,6 +140,7 @@ function QuizPage() {
       } else {
         setSavedSets(sets);
       }
+      setFilterLevel(null);
     }).catch(() => {});
   }, [showImportConfig]);
 
@@ -351,20 +371,43 @@ function QuizPage() {
             ) : (
               <>
                 <p className="text-gray-500 text-sm text-center">Chọn một hoặc nhiều quiz để gộp lại</p>
+                {levels.length > 0 && (
+                  <div className="flex gap-2 justify-center flex-wrap">
+                    <button
+                      onClick={() => setFilterLevel(null)}
+                      className={`px-3 py-1 rounded-lg text-xs font-medium transition-all ${
+                        filterLevel === null ? 'bg-indigo-500 text-white shadow' : 'bg-gray-100 text-gray-600 hover:bg-gray-200'
+                      }`}
+                    >
+                      Tất cả
+                    </button>
+                    {levels.map(([l, count]) => (
+                      <button
+                        key={l}
+                        onClick={() => setFilterLevel(l)}
+                        className={`px-3 py-1 rounded-lg text-xs font-medium transition-all ${
+                          filterLevel === l ? 'bg-indigo-500 text-white shadow' : 'bg-gray-100 text-gray-600 hover:bg-gray-200'
+                        }`}
+                      >
+                        {l} ({count})
+                      </button>
+                    ))}
+                  </div>
+                )}
                 <div className="flex flex-col gap-2 max-h-60 overflow-y-auto">
-                  {savedSets.map((s, idx) => {
+                  {filteredSets.map((s, idx) => {
                     const isSelected = selectedSetIds.includes(s.id);
                     return (
                       <div
                         key={s.id}
-                        draggable={isAdmin}
-                        onDragStart={(e) => { e.dataTransfer.setData('text/plain', String(idx)); }}
+                        draggable={isAdmin && !filterLevel}
+                        onDragStart={(e) => { const realIdx = savedSets.findIndex((x) => x.id === s.id); e.dataTransfer.setData('text/plain', String(realIdx)); }}
                         onDragOver={(e) => { e.preventDefault(); }}
-                        onDrop={(e) => { e.preventDefault(); const from = parseInt(e.dataTransfer.getData('text/plain')); if (from === idx) return; const arr = [...savedSets]; const [item] = arr.splice(from, 1); arr.splice(idx, 0, item); setSavedSets(arr); reorderQuizSets(arr.map(s => s.id)); }}
+                        onDrop={(e) => { e.preventDefault(); const from = parseInt(e.dataTransfer.getData('text/plain')); const to = savedSets.findIndex((x) => x.id === s.id); if (from === to) return; const arr = [...savedSets]; const [item] = arr.splice(from, 1); const toIdx = savedSets.findIndex((x) => x.id === s.id); arr.splice(toIdx, 0, item); setSavedSets(arr); reorderQuizSets(arr.map(x => x.id)); }}
                         className={`flex items-center gap-3 p-3 rounded-xl border-2 cursor-pointer transition-all ${isSelected ? 'border-emerald-400 bg-emerald-50' : 'border-gray-200 bg-white hover:border-gray-300'}`}
                         onClick={() => setSelectedSetIds((prev) => isSelected ? prev.filter((id) => id !== s.id) : [...prev, s.id])}
                       >
-                        {isAdmin && <span className="text-gray-300 cursor-grab active:cursor-grabbing text-lg">⠿</span>}
+                        {isAdmin && !filterLevel && <span className="text-gray-300 cursor-grab active:cursor-grabbing text-lg">⠿</span>}
                         <div className={`w-5 h-5 rounded flex items-center justify-center flex-shrink-0 ${isSelected ? 'bg-emerald-500' : 'border-2 border-gray-300'}`}>
                           {isSelected && <span className="text-white text-xs">✓</span>}
                         </div>
@@ -375,6 +418,7 @@ function QuizPage() {
                         {isAdmin && <button
                           onClick={(e) => { e.stopPropagation(); handleDeleteSet(s.id); }}
                           className="text-gray-300 hover:text-red-400 transition-colors text-lg leading-none"
+                          aria-label={`Xóa bộ quiz ${s.name}`}
                         >
                           ×
                         </button>}

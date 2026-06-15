@@ -100,10 +100,11 @@ function formatLastSaved(iso: string) {
 }
 
 // Toolbar button component
-function ToolbarBtn({ onClick, active, tooltip, children, className = '' }: {
+function ToolbarBtn({ onClick, active, tooltip, ariaLabel, children, className = '' }: {
   onClick: () => void;
   active?: boolean;
   tooltip?: string;
+  ariaLabel?: string;
   children: React.ReactNode;
   className?: string;
 }) {
@@ -112,6 +113,7 @@ function ToolbarBtn({ onClick, active, tooltip, children, className = '' }: {
       onClick={onClick}
       className={`note-toolbar-btn ${active ? 'active' : ''} ${className}`}
       data-tooltip={tooltip}
+      aria-label={ariaLabel}
     >
       {children}
     </button>
@@ -250,13 +252,13 @@ export default function SessionNotePage() {
             onClick={() => router.back()}
             className="text-sm text-gray-500 hover:text-indigo-500 transition-colors flex items-center gap-1"
           >
-            <svg width="16" height="16" viewBox="0 0 16 16" fill="none"><path d="M10 12L6 8l4-4" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/></svg>
+            <svg width="16" height="16" viewBox="0 0 16 16" fill="none" aria-hidden="true"><path d="M10 12L6 8l4-4" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/></svg>
             Quay lại
           </button>
           <div className="flex items-center gap-2">
             {saved && (
               <span className="save-indicator text-xs text-emerald-500 flex items-center gap-1">
-                <svg width="14" height="14" viewBox="0 0 14 14" fill="none"><path d="M3 7l3 3 5-5" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/></svg>
+                <svg width="14" height="14" viewBox="0 0 14 14" fill="none" aria-hidden="true"><path d="M3 7l3 3 5-5" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/></svg>
                 Đã lưu
               </span>
             )}
@@ -321,66 +323,66 @@ export default function SessionNotePage() {
           {/* Sticky Toolbar */}
           <div className="note-toolbar flex flex-wrap items-center gap-0.5 p-2 border-b border-gray-100 bg-white/80">
             {/* Undo / Redo */}
-            <ToolbarBtn onClick={() => editor.chain().focus().undo().run()} tooltip="Hoàn tác (Ctrl+Z)">
-              <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><polyline points="1 4 1 10 7 10"/><path d="M3.51 15a9 9 0 1 0 2.13-9.36L1 10"/></svg>
+            <ToolbarBtn onClick={() => editor.chain().focus().undo().run()} tooltip="Hoàn tác (Ctrl+Z)" ariaLabel="Hoàn tác">
+              <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true"><polyline points="1 4 1 10 7 10"/><path d="M3.51 15a9 9 0 1 0 2.13-9.36L1 10"/></svg>
             </ToolbarBtn>
-            <ToolbarBtn onClick={() => editor.chain().focus().redo().run()} tooltip="Làm lại (Ctrl+Y)">
-              <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><polyline points="23 4 23 10 17 10"/><path d="M20.49 15a9 9 0 1 1-2.12-9.36L23 10"/></svg>
+            <ToolbarBtn onClick={() => editor.chain().focus().redo().run()} tooltip="Làm lại (Ctrl+Y)" ariaLabel="Làm lại">
+              <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true"><polyline points="23 4 23 10 17 10"/><path d="M20.49 15a9 9 0 1 1-2.12-9.36L23 10"/></svg>
             </ToolbarBtn>
 
             <ToolbarDivider />
 
             {/* Text formatting */}
-            <ToolbarBtn onClick={() => editor.chain().focus().toggleBold().run()} active={editor.isActive('bold')} tooltip="Đậm (Ctrl+B)">
+            <ToolbarBtn onClick={() => editor.chain().focus().toggleBold().run()} active={editor.isActive('bold')} tooltip="Đậm (Ctrl+B)" ariaLabel="Đậm">
               <strong>B</strong>
             </ToolbarBtn>
-            <ToolbarBtn onClick={() => editor.chain().focus().toggleItalic().run()} active={editor.isActive('italic')} tooltip="Nghiêng (Ctrl+I)">
+            <ToolbarBtn onClick={() => editor.chain().focus().toggleItalic().run()} active={editor.isActive('italic')} tooltip="Nghiêng (Ctrl+I)" ariaLabel="Nghiêng">
               <em>I</em>
             </ToolbarBtn>
-            <ToolbarBtn onClick={() => editor.chain().focus().toggleUnderline().run()} active={editor.isActive('underline')} tooltip="Gạch chân (Ctrl+U)">
+            <ToolbarBtn onClick={() => editor.chain().focus().toggleUnderline().run()} active={editor.isActive('underline')} tooltip="Gạch chân (Ctrl+U)" ariaLabel="Gạch chân">
               <span style={{ textDecoration: 'underline' }}>U</span>
             </ToolbarBtn>
-            <ToolbarBtn onClick={() => editor.chain().focus().toggleStrike().run()} active={editor.isActive('strike')} tooltip="Gạch ngang (Ctrl+Shift+X)">
+            <ToolbarBtn onClick={() => editor.chain().focus().toggleStrike().run()} active={editor.isActive('strike')} tooltip="Gạch ngang (Ctrl+Shift+X)" ariaLabel="Gạch ngang">
               <s>S</s>
             </ToolbarBtn>
 
             <ToolbarDivider />
 
             {/* Headings */}
-            <ToolbarBtn onClick={() => editor.chain().focus().toggleHeading({ level: 1 }).run()} active={editor.isActive('heading', { level: 1 })} tooltip="Tiêu đề 1">
+            <ToolbarBtn onClick={() => editor.chain().focus().toggleHeading({ level: 1 }).run()} active={editor.isActive('heading', { level: 1 })} tooltip="Tiêu đề 1" ariaLabel="Tiêu đề 1">
               <span className="font-bold text-[11px]">H1</span>
             </ToolbarBtn>
-            <ToolbarBtn onClick={() => editor.chain().focus().toggleHeading({ level: 2 }).run()} active={editor.isActive('heading', { level: 2 })} tooltip="Tiêu đề 2">
+            <ToolbarBtn onClick={() => editor.chain().focus().toggleHeading({ level: 2 }).run()} active={editor.isActive('heading', { level: 2 })} tooltip="Tiêu đề 2" ariaLabel="Tiêu đề 2">
               <span className="font-bold text-[11px]">H2</span>
             </ToolbarBtn>
-            <ToolbarBtn onClick={() => editor.chain().focus().toggleHeading({ level: 3 }).run()} active={editor.isActive('heading', { level: 3 })} tooltip="Tiêu đề 3">
+            <ToolbarBtn onClick={() => editor.chain().focus().toggleHeading({ level: 3 }).run()} active={editor.isActive('heading', { level: 3 })} tooltip="Tiêu đề 3" ariaLabel="Tiêu đề 3">
               <span className="font-bold text-[11px]">H3</span>
             </ToolbarBtn>
 
             <ToolbarDivider />
 
             {/* Lists */}
-            <ToolbarBtn onClick={() => editor.chain().focus().toggleBulletList().run()} active={editor.isActive('bulletList')} tooltip="Danh sách">
-              <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round"><line x1="8" y1="6" x2="21" y2="6"/><line x1="8" y1="12" x2="21" y2="12"/><line x1="8" y1="18" x2="21" y2="18"/><circle cx="3" cy="6" r="1" fill="currentColor"/><circle cx="3" cy="12" r="1" fill="currentColor"/><circle cx="3" cy="18" r="1" fill="currentColor"/></svg>
+            <ToolbarBtn onClick={() => editor.chain().focus().toggleBulletList().run()} active={editor.isActive('bulletList')} tooltip="Danh sách" ariaLabel="Danh sách">
+              <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" aria-hidden="true"><line x1="8" y1="6" x2="21" y2="6"/><line x1="8" y1="12" x2="21" y2="12"/><line x1="8" y1="18" x2="21" y2="18"/><circle cx="3" cy="6" r="1" fill="currentColor"/><circle cx="3" cy="12" r="1" fill="currentColor"/><circle cx="3" cy="18" r="1" fill="currentColor"/></svg>
             </ToolbarBtn>
-            <ToolbarBtn onClick={() => editor.chain().focus().toggleOrderedList().run()} active={editor.isActive('orderedList')} tooltip="Danh sách đánh số">
-              <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round"><line x1="10" y1="6" x2="21" y2="6"/><line x1="10" y1="12" x2="21" y2="12"/><line x1="10" y1="18" x2="21" y2="18"/><text x="2" y="8" fontSize="7" fill="currentColor" stroke="none" fontWeight="bold">1</text><text x="2" y="14" fontSize="7" fill="currentColor" stroke="none" fontWeight="bold">2</text><text x="2" y="20" fontSize="7" fill="currentColor" stroke="none" fontWeight="bold">3</text></svg>
+            <ToolbarBtn onClick={() => editor.chain().focus().toggleOrderedList().run()} active={editor.isActive('orderedList')} tooltip="Danh sách đánh số" ariaLabel="Danh sách đánh số">
+              <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" aria-hidden="true"><line x1="10" y1="6" x2="21" y2="6"/><line x1="10" y1="12" x2="21" y2="12"/><line x1="10" y1="18" x2="21" y2="18"/><text x="2" y="8" fontSize="7" fill="currentColor" stroke="none" fontWeight="bold">1</text><text x="2" y="14" fontSize="7" fill="currentColor" stroke="none" fontWeight="bold">2</text><text x="2" y="20" fontSize="7" fill="currentColor" stroke="none" fontWeight="bold">3</text></svg>
             </ToolbarBtn>
-            <ToolbarBtn onClick={() => editor.chain().focus().toggleTaskList().run()} active={editor.isActive('taskList')} tooltip="Danh sách việc cần làm">
-              <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><rect x="3" y="5" width="6" height="6" rx="1"/><path d="M5 8l1.5 1.5L9 6.5"/><line x1="13" y1="8" x2="21" y2="8"/><rect x="3" y="13" width="6" height="6" rx="1"/><line x1="13" y1="16" x2="21" y2="16"/></svg>
+            <ToolbarBtn onClick={() => editor.chain().focus().toggleTaskList().run()} active={editor.isActive('taskList')} tooltip="Danh sách việc cần làm" ariaLabel="Danh sách việc cần làm">
+              <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" aria-hidden="true" strokeLinejoin="round"><rect x="3" y="5" width="6" height="6" rx="1"/><path d="M5 8l1.5 1.5L9 6.5"/><line x1="13" y1="8" x2="21" y2="8"/><rect x="3" y="13" width="6" height="6" rx="1"/><line x1="13" y1="16" x2="21" y2="16"/></svg>
             </ToolbarBtn>
 
             <ToolbarDivider />
 
             {/* Block elements */}
-            <ToolbarBtn onClick={() => editor.chain().focus().toggleBlockquote().run()} active={editor.isActive('blockquote')} tooltip="Trích dẫn">
-              <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round"><path d="M3 21c3 0 7-1 7-8V5c0-1.25-.756-2.017-2-2H4c-1.25 0-2 .75-2 1.972V11c0 1.25.75 2 2 2 1 0 1 0 1 1v1c0 1-1 2-2 2s-1 .008-1 1.031V21z"/><path d="M15 21c3 0 7-1 7-8V5c0-1.25-.757-2.017-2-2h-4c-1.25 0-2 .75-2 1.972V11c0 1.25.75 2 2 2h.75c0 2.25.25 4-2.75 4v3z"/></svg>
+            <ToolbarBtn onClick={() => editor.chain().focus().toggleBlockquote().run()} active={editor.isActive('blockquote')} tooltip="Trích dẫn" ariaLabel="Trích dẫn">
+              <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" aria-hidden="true"><path d="M3 21c3 0 7-1 7-8V5c0-1.25-.756-2.017-2-2H4c-1.25 0-2 .75-2 1.972V11c0 1.25.75 2 2 2 1 0 1 0 1 1v1c0 1-1 2-2 2s-1 .008-1 1.031V21z"/><path d="M15 21c3 0 7-1 7-8V5c0-1.25-.757-2.017-2-2h-4c-1.25 0-2 .75-2 1.972V11c0 1.25.75 2 2 2h.75c0 2.25.25 4-2.75 4v3z"/></svg>
             </ToolbarBtn>
-            <ToolbarBtn onClick={() => editor.chain().focus().toggleCodeBlock().run()} active={editor.isActive('codeBlock')} tooltip="Khối code (Ctrl+Alt+C)">
-              <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><polyline points="16 18 22 12 16 6"/><polyline points="8 6 2 12 8 18"/></svg>
+            <ToolbarBtn onClick={() => editor.chain().focus().toggleCodeBlock().run()} active={editor.isActive('codeBlock')} tooltip="Khối code (Ctrl+Alt+C)" ariaLabel="Khối code">
+              <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" aria-hidden="true" strokeLinejoin="round"><polyline points="16 18 22 12 16 6"/><polyline points="8 6 2 12 8 18"/></svg>
             </ToolbarBtn>
-            <ToolbarBtn onClick={() => editor.chain().focus().setHorizontalRule().run()} tooltip="Đường kẻ ngang">
-              <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round"><line x1="3" y1="12" x2="21" y2="12"/></svg>
+            <ToolbarBtn onClick={() => editor.chain().focus().setHorizontalRule().run()} tooltip="Đường kẻ ngang" ariaLabel="Đường kẻ ngang">
+              <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" aria-hidden="true"><line x1="3" y1="12" x2="21" y2="12"/></svg>
             </ToolbarBtn>
 
             <ToolbarDivider />
@@ -391,8 +393,9 @@ export default function SessionNotePage() {
                 onClick={() => { setShowHighlightPicker(!showHighlightPicker); setShowColorPicker(false); }}
                 active={editor.isActive('highlight')}
                 tooltip="Tô đánh dấu"
+                ariaLabel="Tô đánh dấu"
               >
-                <svg width="15" height="15" viewBox="0 0 24 24" fill="none"><rect x="2" y="18" width="20" height="4" rx="1" fill="#fef08a"/><path d="M6 14l8-8 4 4-8 8H6v-4z" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/></svg>
+                <svg width="15" height="15" viewBox="0 0 24 24" fill="none" aria-hidden="true"><rect x="2" y="18" width="20" height="4" rx="1" fill="#fef08a"/><path d="M6 14l8-8 4 4-8 8H6v-4z" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/></svg>
               </ToolbarBtn>
               {showHighlightPicker && (
                 <div className="absolute top-full left-0 mt-1 bg-white rounded-xl shadow-lg border border-gray-200 p-2 flex gap-1.5 z-30">
@@ -405,7 +408,7 @@ export default function SessionNotePage() {
                       }}
                       className="w-6 h-6 rounded-full border-2 border-white shadow-sm hover:scale-110 transition-transform"
                       style={{ backgroundColor: h.color }}
-                      title={h.label}
+                      aria-label={`Tô màu ${h.label}`}
                     />
                   ))}
                   <button
@@ -414,7 +417,7 @@ export default function SessionNotePage() {
                       setShowHighlightPicker(false);
                     }}
                     className="w-6 h-6 rounded-full border border-gray-300 flex items-center justify-center text-gray-400 text-[10px] hover:bg-gray-100"
-                    title="Xóa highlight"
+                    aria-label="Xóa highlight"
                   >
                     ✕
                   </button>
@@ -427,8 +430,9 @@ export default function SessionNotePage() {
               <ToolbarBtn
                 onClick={() => { setShowColorPicker(!showColorPicker); setShowHighlightPicker(false); }}
                 tooltip="Màu chữ"
+                ariaLabel="Màu chữ"
               >
-                <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M4 20h16"/><path d="M7 16L12 4l5 12"/><path d="M9.5 12h5"/></svg>
+                <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" aria-hidden="true" strokeLinejoin="round"><path d="M4 20h16"/><path d="M7 16L12 4l5 12"/><path d="M9.5 12h5"/></svg>
               </ToolbarBtn>
               {showColorPicker && (
                 <div className="absolute top-full left-0 mt-1 bg-white rounded-xl shadow-lg border border-gray-200 p-2 flex gap-1.5 z-30">
@@ -441,7 +445,7 @@ export default function SessionNotePage() {
                       }}
                       className="w-6 h-6 rounded-full border-2 border-white shadow-sm hover:scale-110 transition-transform"
                       style={{ backgroundColor: c.color }}
-                      title={c.label}
+                      aria-label={`Màu chữ ${c.label}`}
                     />
                   ))}
                   <button
@@ -450,7 +454,7 @@ export default function SessionNotePage() {
                       setShowColorPicker(false);
                     }}
                     className="w-6 h-6 rounded-full border border-gray-300 flex items-center justify-center text-gray-400 text-[10px] hover:bg-gray-100"
-                    title="Mặc định"
+                    aria-label="Mặc định"
                   >
                     ✕
                   </button>
@@ -465,6 +469,7 @@ export default function SessionNotePage() {
               <ToolbarBtn
                 onClick={() => setShowTemplatePicker(!showTemplatePicker)}
                 tooltip="Chèn template ghi chú"
+                ariaLabel="Chèn template ghi chú"
               >
                 <span className="text-[11px]">📋</span>
               </ToolbarBtn>
@@ -480,11 +485,11 @@ export default function SessionNotePage() {
               )}
             </div>
 
-            <ToolbarBtn onClick={handlePrint} tooltip="In / Xuất PDF">
-              <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><polyline points="6 9 6 2 18 2 18 9"/><path d="M6 18H4a2 2 0 0 1-2-2v-5a2 2 0 0 1 2-2h16a2 2 0 0 1 2 2v5a2 2 0 0 1-2 2h-2"/><rect x="6" y="14" width="12" height="8"/></svg>
+            <ToolbarBtn onClick={handlePrint} tooltip="In / Xuất PDF" ariaLabel="In / Xuất PDF">
+              <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" aria-hidden="true" strokeLinejoin="round"><polyline points="6 9 6 2 18 2 18 9"/><path d="M6 18H4a2 2 0 0 1-2-2v-5a2 2 0 0 1 2-2h16a2 2 0 0 1 2 2v5a2 2 0 0 1-2 2h-2"/><rect x="6" y="14" width="12" height="8"/></svg>
             </ToolbarBtn>
-            <ToolbarBtn onClick={handleExportText} tooltip="Xuất file .txt">
-              <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
+            <ToolbarBtn onClick={handleExportText} tooltip="Xuất file .txt" ariaLabel="Xuất file .txt">
+              <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" aria-hidden="true" strokeLinejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
             </ToolbarBtn>
           </div>
 
@@ -514,7 +519,7 @@ export default function SessionNotePage() {
               href={`/schedule/${sessionNum - 1}`}
               className="text-gray-400 hover:text-indigo-500 transition-colors flex items-center gap-1"
             >
-              <svg width="14" height="14" viewBox="0 0 16 16" fill="none"><path d="M10 12L6 8l4-4" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/></svg>
+              <svg width="14" height="14" viewBox="0 0 16 16" fill="none" aria-hidden="true"><path d="M10 12L6 8l4-4" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/></svg>
               Buổi {sessionNum - 1}
             </Link>
           ) : <div />}
@@ -524,7 +529,7 @@ export default function SessionNotePage() {
               className="text-gray-400 hover:text-indigo-500 transition-colors flex items-center gap-1"
             >
               Buổi {sessionNum + 1}
-              <svg width="14" height="14" viewBox="0 0 16 16" fill="none"><path d="M6 4l4 4-4 4" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/></svg>
+              <svg width="14" height="14" viewBox="0 0 16 16" fill="none" aria-hidden="true"><path d="M6 4l4 4-4 4" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/></svg>
             </Link>
           ) : <div />}
         </div>

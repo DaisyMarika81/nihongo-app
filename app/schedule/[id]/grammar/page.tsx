@@ -32,7 +32,7 @@ function AdminMenu({ onEdit, onDelete }: { onEdit: () => void; onDelete: () => v
   const [open, setOpen] = useState(false);
   return (
     <div className="absolute top-4 right-4">
-      <button onClick={() => setOpen(!open)} className="w-7 h-7 flex items-center justify-center rounded-md text-gray-400 hover:text-gray-600 hover:bg-gray-100 transition-colors">
+      <button onClick={() => setOpen(!open)} className="w-7 h-7 flex items-center justify-center rounded-md text-gray-400 hover:text-gray-600 hover:bg-gray-100 transition-colors" aria-label="Menu quản lý">
         <span className="text-sm font-bold">⋯</span>
       </button>
       {open && <>
@@ -111,7 +111,7 @@ export default function SessionGrammarPage() {
     return (
       <div className="min-h-screen p-4 pb-24 flex flex-col items-center justify-center text-center">
         <Link href="/schedule" className="self-start text-sm text-gray-500 hover:text-indigo-500 transition-colors flex items-center gap-1 mb-4">
-          <svg width="16" height="16" viewBox="0 0 16 16" fill="none"><path d="M10 12L6 8l4-4" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/></svg>
+          <svg width="16" height="16" viewBox="0 0 16 16" fill="none" aria-hidden="true"><path d="M10 12L6 8l4-4" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/></svg>
           Quay lại
         </Link>
         <p className="text-4xl mb-4">📭</p>
@@ -123,7 +123,7 @@ export default function SessionGrammarPage() {
   return (
     <div className="min-h-screen p-4 pb-24">
       <Link href="/schedule" className="text-sm text-gray-500 hover:text-indigo-500 transition-colors flex items-center gap-1 mb-2">
-        <svg width="16" height="16" viewBox="0 0 16 16" fill="none"><path d="M10 12L6 8l4-4" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/></svg>
+        <svg width="16" height="16" viewBox="0 0 16 16" fill="none" aria-hidden="true"><path d="M10 12L6 8l4-4" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/></svg>
         Quay lại
       </Link>
       <h1 className="text-xl font-bold text-gray-800 mb-4">📐 Ngữ pháp Buổi {sessionId}</h1>
@@ -255,7 +255,7 @@ export default function SessionGrammarPage() {
                 {/* Example with grammar highlight */}
                   <div className="bg-gray-50 rounded-xl p-4 border border-gray-100 space-y-2">
                   <div className="flex items-start gap-2">
-                    <button onClick={() => speak(getExampleText(g.example))} className="text-sm mt-0.5 shrink-0">🔊</button>
+                    <button onClick={() => speak(getExampleText(g.example))} className="text-sm mt-0.5 shrink-0" aria-label="Phát âm">🔊</button>
                     <span
                       className="text-lg font-semibold leading-relaxed break-words"
                       style={{ color: '#333' }}
