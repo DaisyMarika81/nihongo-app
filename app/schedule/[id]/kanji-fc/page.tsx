@@ -12,6 +12,9 @@ import { supabase } from '@/lib/supabase';
 function toHiragana(str: string): string {
   return str.replace(/[\u30A1-\u30F6]/g, (ch) => String.fromCharCode(ch.charCodeAt(0) - 0x60));
 }
+function escapeRegex(str: string): string {
+  return str.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+}
 
 export default function SessionKanjiPage() {
   const { id } = useParams();
@@ -300,9 +303,9 @@ export default function SessionKanjiPage() {
                 <div className="mt-3 space-y-1.5">
                   {c.vocab.map((v, j) => (
                     <div key={j} className="bg-gray-50 rounded-lg px-3 py-2">
-                      <div className="text-sm font-bold text-gray-800" dangerouslySetInnerHTML={{ __html: v.word.replace(new RegExp(`(${v.highlight || c.kanji})`, 'g'), '<span class="text-amber-500">$1</span>') }} />
-                      <div className="text-xs text-gray-400 mt-0.5">{v.reading}</div>
-                      <div className="text-xs text-gray-600">{v.meaning}</div>
+                      <div className="text-sm font-bold text-gray-800" dangerouslySetInnerHTML={{ __html: v.word.replace(new RegExp(`(${escapeRegex(v.highlight || c.kanji)})`, 'g'), '<span class="text-amber-500">$1</span>') }} />
+                      <div className="text-xs text-gray-400 mt-0.5">{(() => { const hl = v.highlightReading || toHiragana(c.onyomi || '') || toHiragana(c.kunyomi || ''); if (!hl) return v.reading; const parts = v.reading.split(new RegExp(`(${escapeRegex(hl)})`, 'g')); return parts.map((p, j) => p.toLowerCase() === hl.toLowerCase() ? <span key={j} className="text-amber-500 font-medium">{p}</span> : p); })()}</div>
+                      <div className="text-xs text-gray-600">{(() => { if (!v.highlightMeaning) return v.meaning; const parts = v.meaning.split(new RegExp(`(${escapeRegex(v.highlightMeaning)})`, 'gi')); return parts.map((p, j) => p.toLowerCase() === v.highlightMeaning!.toLowerCase() ? <span key={j} className="text-amber-500 font-medium">{p}</span> : p); })()}</div>
                     </div>
                   ))}
                 </div>
@@ -456,9 +459,9 @@ export default function SessionKanjiPage() {
                     <div key={i} className="rounded-lg p-2.5 relative" style={{ background: 'rgba(255,255,255,0.08)' }}>
                       <span className="absolute top-1.5 right-2 text-[9px] text-white/25">{i + 1}</span>
                       <div className="min-w-0">
-                        <div className="text-[15px] font-bold text-white" dangerouslySetInnerHTML={{ __html: v.word.replace(new RegExp(`(${v.highlight || card.kanji})`, 'g'), '<span style="color:#facc15">$1</span>') }} />
-                        <div className="text-[11px] text-white/40 mt-0.5" dangerouslySetInnerHTML={{ __html: v.highlightReading ? v.reading.replace(new RegExp(`(${v.highlightReading})`, 'g'), '<span style="color:#facc15">$1</span>') : v.reading }} />
-                        <div className="text-xs text-white/70 mt-0.5" dangerouslySetInnerHTML={{ __html: v.highlightMeaning ? v.meaning.replace(new RegExp(`(${v.highlightMeaning})`, 'gi'), '<span style="color:#facc15">$1</span>') : v.meaning }} />
+                        <div className="text-[15px] font-bold text-white" dangerouslySetInnerHTML={{ __html: v.word.replace(new RegExp(`(${escapeRegex(v.highlight || card.kanji)})`, 'g'), '<span style="color:#facc15">$1</span>') }} />
+                        <div className="text-[11px] text-white/40 mt-0.5">{(() => { const hl = v.highlightReading || toHiragana(card.onyomi || '') || toHiragana(card.kunyomi || ''); if (!hl) return v.reading; const parts = v.reading.split(new RegExp(`(${escapeRegex(hl)})`, 'g')); return parts.map((p, j) => p.toLowerCase() === hl.toLowerCase() ? <span key={j} style={{color:'#facc15'}}>{p}</span> : p); })()}</div>
+                        <div className="text-xs text-white/70 mt-0.5">{(() => { if (!v.highlightMeaning) return v.meaning; const parts = v.meaning.split(new RegExp(`(${escapeRegex(v.highlightMeaning)})`, 'gi')); return parts.map((p, j) => p.toLowerCase() === v.highlightMeaning!.toLowerCase() ? <span key={j} style={{color:'#facc15'}}>{p}</span> : p); })()}</div>
                       </div>
                     </div>
                 ))}
