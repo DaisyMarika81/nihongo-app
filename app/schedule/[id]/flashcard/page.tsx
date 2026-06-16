@@ -182,6 +182,9 @@ export default function SessionFlashCard() {
   }
 
   const [managing, setManaging] = useState(false);
+  const [editJson, setEditJson] = useState(false);
+  const [editJsonText, setEditJsonText] = useState('');
+  const [editJsonError, setEditJsonError] = useState('');
   const [editIdx, setEditIdx] = useState<number | null>(null);
   const [editData, setEditData] = useState<Partial<SessionCard>>({});
 
@@ -244,10 +247,21 @@ export default function SessionFlashCard() {
           <h1 className="text-xl font-bold text-gray-800">🗑️ Quản lý từ ({cards.length})</h1>
           <button onClick={() => setManaging(false)} className="text-sm text-gray-500">← Quay lại</button>
         </div>
-        <div className="flex gap-2 mb-4">
+        <div className="flex gap-2 mb-4 flex-wrap">
           <button onClick={exportFlashcard} className="px-4 py-2 bg-gradient-to-r from-sky-400 to-blue-500 text-white rounded-xl text-sm font-medium shadow">📤 Export JSON</button>
           <button onClick={async () => { if (!confirm(`Xóa tất cả ${cards.length} từ buổi ${sessionId}?`)) return; await supabase.from('session_data').delete().eq('session_num', sessionId).eq('type', 'flashcard'); setCards([]); setManaging(false); }} className="px-4 py-2 bg-gradient-to-r from-red-400 to-red-500 text-white rounded-xl text-sm font-medium shadow">🗑️ Xóa tất cả</button>
+          <button onClick={() => { setEditJson(!editJson); if (!editJson) { setEditJsonText(JSON.stringify(cards, null, 2)); setEditJsonError(''); } }} className={`px-4 py-2 rounded-xl text-sm font-medium shadow ${editJson ? 'bg-indigo-500 text-white' : 'bg-gradient-to-r from-gray-400 to-gray-500 text-white'}`}>📝 Edit JSON</button>
         </div>
+        {editJson && (
+          <div className="mb-4 space-y-2">
+            <textarea value={editJsonText} onChange={(e) => setEditJsonText(e.target.value)} className="w-full h-64 p-3 font-mono text-xs border border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-indigo-300 resize-y" spellCheck={false} />
+            {editJsonError && <p className="text-red-500 text-xs">⚠ {editJsonError}</p>}
+            <div className="flex gap-2">
+              <button onClick={async () => { try { const parsed = JSON.parse(editJsonText); if (!Array.isArray(parsed)) throw new Error('Phải là một mảng'); setCards(parsed); const baseLen = baseCards.length; const dbItems = parsed.slice(baseLen); if (dbItems.length) await supabase.from('session_data').update({ items: dbItems, updated_at: new Date().toISOString() }).eq('session_num', sessionId).eq('type', 'flashcard'); setEditJson(false); } catch (e: unknown) { setEditJsonError(e instanceof Error ? e.message : 'JSON không hợp lệ'); } }} className="px-4 py-2 bg-emerald-500 text-white rounded-xl text-sm font-medium shadow hover:bg-emerald-600">💾 Lưu</button>
+              <button onClick={() => setEditJson(false)} className="px-4 py-2 bg-gray-200 text-gray-600 rounded-xl text-sm font-medium">Hủy</button>
+            </div>
+          </div>
+        )}
         <div className="space-y-2">
           {cards.map((c, i) => {
             const isRich = 'kanji' in c && c.kanji;

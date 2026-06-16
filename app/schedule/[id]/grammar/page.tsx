@@ -55,6 +55,9 @@ export default function SessionGrammarPage() {
   const [customItems, setCustomItems] = useState<SessionGrammar[]>([]);
   const [editIdx, setEditIdx] = useState<number | null>(null);
   const [editData, setEditData] = useState<Partial<SessionGrammar>>({});
+  const [editJson, setEditJson] = useState(false);
+  const [editJsonText, setEditJsonText] = useState('');
+  const [editJsonError, setEditJsonError] = useState('');
 
   useEffect(() => {
     getSessionData(sessionId, 'grammar').then(data => {
@@ -128,10 +131,21 @@ export default function SessionGrammarPage() {
       </Link>
       <h1 className="text-xl font-bold text-gray-800 mb-4">📐 Ngữ pháp Buổi {sessionId}</h1>
       <p className="text-sm text-gray-500 mb-4">{allItems.length} cấu trúc</p>
-      {isAdmin && <div className="flex gap-2 mb-6">
+      {isAdmin && <div className="flex gap-2 mb-6 flex-wrap">
         <button onClick={() => { const json = JSON.stringify(allItems, null, 2); const blob = new Blob([json], { type: 'application/json' }); const url = URL.createObjectURL(blob); const a = document.createElement('a'); a.href = url; a.download = `grammar-buoi-${sessionId}.json`; a.click(); URL.revokeObjectURL(url); }} className="px-3 py-1.5 bg-gradient-to-r from-sky-400 to-blue-500 text-white rounded-xl text-xs font-medium shadow">📤 Export JSON</button>
         <button onClick={async () => { if (!confirm(`Xóa tất cả ngữ pháp buổi ${sessionId}?`)) return; await supabase.from('session_data').delete().eq('session_num', sessionId).eq('type', 'grammar'); setItems([]); setCustomItems([]); }} className="px-3 py-1.5 bg-gradient-to-r from-red-400 to-red-500 text-white rounded-xl text-xs font-medium shadow">🗑️ Xóa tất cả</button>
+        <button onClick={() => { setEditJson(!editJson); if (!editJson) { setEditJsonText(JSON.stringify(allItems, null, 2)); setEditJsonError(''); } }} className={`px-3 py-1.5 rounded-xl text-xs font-medium shadow ${editJson ? 'bg-indigo-500 text-white' : 'bg-gradient-to-r from-gray-400 to-gray-500 text-white'}`}>📝 Edit JSON</button>
       </div>}
+      {editJson && (
+        <div className="mb-6 space-y-2">
+          <textarea value={editJsonText} onChange={(e) => setEditJsonText(e.target.value)} className="w-full h-64 p-3 font-mono text-xs border border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-indigo-300 resize-y" spellCheck={false} />
+          {editJsonError && <p className="text-red-500 text-xs">⚠ {editJsonError}</p>}
+          <div className="flex gap-2">
+            <button onClick={async () => { try { const parsed = JSON.parse(editJsonText); if (!Array.isArray(parsed)) throw new Error('Phải là một mảng'); const baseLen = items.length; const newCustom = parsed.slice(baseLen); setItems(parsed.slice(0, baseLen)); setCustomItems(newCustom); if (newCustom.length) await supabase.from('session_data').update({ items: newCustom, updated_at: new Date().toISOString() }).eq('session_num', sessionId).eq('type', 'grammar'); setEditJson(false); } catch (e: unknown) { setEditJsonError(e instanceof Error ? e.message : 'JSON không hợp lệ'); } }} className="px-4 py-2 bg-emerald-500 text-white rounded-xl text-sm font-medium shadow hover:bg-emerald-600">💾 Lưu</button>
+            <button onClick={() => setEditJson(false)} className="px-4 py-2 bg-gray-200 text-gray-600 rounded-xl text-sm font-medium">Hủy</button>
+          </div>
+        </div>
+      )}
 
       <div className="space-y-4">
         {allItems.map((g, i) => (

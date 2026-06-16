@@ -48,12 +48,12 @@ export default function SessionKanjiPage() {
   useEffect(() => {
     const handler = (e: KeyboardEvent) => {
       if (e.code === 'Space') { e.preventDefault(); setFlipped((f) => !f); }
-      if (flipped && e.code === 'ArrowLeft') { next(false); }
-      if (flipped && e.code === 'ArrowRight') { next(true); }
+      if (e.code === 'ArrowLeft') { setFlipped(false); setIndex((i) => (i - 1 + cards.length) % cards.length); }
+      if (e.code === 'ArrowRight') { setFlipped(false); setIndex((i) => (i + 1) % cards.length); }
     };
     window.addEventListener('keydown', handler);
     return () => window.removeEventListener('keydown', handler);
-  }, [flipped, index, done, unknown]);
+  }, [cards.length]);
 
   const reviewed = new Set([...done, ...unknown]);
   const remaining = cards.length - reviewed.size;
@@ -74,8 +74,13 @@ export default function SessionKanjiPage() {
 
   const [isShuffled, setIsShuffled] = useState(false);
   const [managing, setManaging] = useState(false);
+  const [editJson, setEditJson] = useState(false);
+  const [editJsonText, setEditJsonText] = useState('');
+  const [editJsonError, setEditJsonError] = useState('');
   const [editingMnemonic, setEditingMnemonic] = useState(false);
   const [mnemonicText, setMnemonicText] = useState('');
+  const [editIdx, setEditIdx] = useState<number | null>(null);
+  const [editForm, setEditForm] = useState<SessionKanjiEntry | null>(null);
 
   async function saveMnemonic() {
     const updated = [...cards];
@@ -96,6 +101,23 @@ export default function SessionKanjiPage() {
       const dbItems = updated.slice(baseLen);
       await supabase.from('session_data').update({ items: dbItems, updated_at: new Date().toISOString() }).eq('session_num', sessionId).eq('type', 'kanji');
     }
+  }
+
+  function startEdit(idx: number) {
+    setEditIdx(idx);
+    setEditForm({ ...cards[idx] });
+  }
+
+  async function saveEdit() {
+    if (editIdx === null || !editForm) return;
+    const updated = [...cards];
+    updated[editIdx] = editForm;
+    setCards(updated);
+    const baseLen = baseCards.length;
+    const dbItems = updated.slice(baseLen);
+    if (dbItems.length) await supabase.from('session_data').update({ items: dbItems, updated_at: new Date().toISOString() }).eq('session_num', sessionId).eq('type', 'kanji');
+    setEditIdx(null);
+    setEditForm(null);
   }
 
   async function handleDeleteKanji(idx: number) {
@@ -144,16 +166,91 @@ export default function SessionKanjiPage() {
         <button onClick={exportKanji} className="mb-4 px-4 py-2 bg-gradient-to-r from-sky-400 to-blue-500 text-white rounded-xl text-sm font-medium shadow">📤 Export JSON</button>
         <button onClick={async () => { if (!confirm(`Xóa tất cả ${cards.length} kanji buổi ${sessionId}?`)) return; await supabase.from('session_data').delete().eq('session_num', sessionId).eq('type', 'kanji'); setCards([]); setManaging(false); }} className="mb-4 ml-2 px-4 py-2 bg-gradient-to-r from-red-400 to-red-500 text-white rounded-xl text-sm font-medium shadow">🗑️ Xóa tất cả</button>
         {isAdmin && <a href={`/upload?session=${sessionId}`} className="mb-4 ml-2 inline-block px-4 py-2 bg-gradient-to-r from-emerald-400 to-green-500 text-white rounded-xl text-sm font-medium shadow">➕ Thêm Kanji</a>}
-        <div className="space-y-2">
-          {cards.map((c, i) => (
-            <div key={i} className="flex items-center justify-between bg-white rounded-xl p-3 shadow-sm border border-gray-100">
-              <div>
-                <span className="text-2xl font-bold">{c.kanji}</span>
-                <span className="text-sm text-gray-500 ml-2">{c.hanViet} — {c.meaning}</span>
-              </div>
-              <button onClick={() => handleDeleteKanji(i)} className="text-xs px-2 py-1 text-red-400 hover:text-red-600 hover:bg-red-50 rounded" aria-label={`Xóa ${c.kanji}`}>🗑️</button>
+        <button onClick={() => { setEditJson(!editJson); if (!editJson) { setEditJsonText(JSON.stringify(cards, null, 2)); setEditJsonError(''); } }} className={`mb-4 ml-2 px-4 py-2 rounded-xl text-sm font-medium shadow ${editJson ? 'bg-indigo-500 text-white' : 'bg-gradient-to-r from-gray-400 to-gray-500 text-white'}`}>📝 Edit JSON</button>
+        {editJson && (
+          <div className="mb-4 space-y-2">
+            <textarea value={editJsonText} onChange={(e) => setEditJsonText(e.target.value)} className="w-full h-64 p-3 font-mono text-xs border border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-indigo-300 resize-y" spellCheck={false} />
+            {editJsonError && <p className="text-red-500 text-xs">⚠ {editJsonError}</p>}
+            <div className="flex gap-2">
+              <button onClick={async () => { try { const parsed = JSON.parse(editJsonText); if (!Array.isArray(parsed)) throw new Error('Phải là một mảng'); setCards(parsed); const baseLen = baseCards.length; const dbItems = parsed.slice(baseLen); if (dbItems.length) await supabase.from('session_data').update({ items: dbItems, updated_at: new Date().toISOString() }).eq('session_num', sessionId).eq('type', 'kanji'); setEditJson(false); } catch (e: unknown) { setEditJsonError(e instanceof Error ? e.message : 'JSON không hợp lệ'); } }} className="px-4 py-2 bg-emerald-500 text-white rounded-xl text-sm font-medium shadow hover:bg-emerald-600">💾 Lưu</button>
+              <button onClick={() => setEditJson(false)} className="px-4 py-2 bg-gray-200 text-gray-600 rounded-xl text-sm font-medium">Hủy</button>
             </div>
-          ))}
+          </div>
+        )}
+        <div className="space-y-2">
+          {cards.map((c, i) => {
+            if (editIdx === i && editForm) {
+              return (
+                <div key={i} className="bg-white rounded-xl p-4 shadow-sm border border-gray-100 space-y-3">
+                  <div className="flex gap-2">
+                    <div className="flex-1">
+                      <label className="text-[10px] text-gray-400 font-medium uppercase tracking-wide">Kanji</label>
+                      <input value={editForm.kanji} onChange={(e) => setEditForm({ ...editForm, kanji: e.target.value })} className="w-full px-3 py-2 border rounded-lg text-sm" />
+                    </div>
+                    <div className="flex-1">
+                      <label className="text-[10px] text-gray-400 font-medium uppercase tracking-wide">Hán Việt</label>
+                      <input value={editForm.hanViet} onChange={(e) => setEditForm({ ...editForm, hanViet: e.target.value })} className="w-full px-3 py-2 border rounded-lg text-sm" />
+                    </div>
+                  </div>
+                  <div>
+                    <label className="text-[10px] text-gray-400 font-medium uppercase tracking-wide">Nghĩa</label>
+                    <input value={editForm.meaning} onChange={(e) => setEditForm({ ...editForm, meaning: e.target.value })} className="w-full px-3 py-2 border rounded-lg text-sm" />
+                  </div>
+                  <div className="flex gap-2">
+                    <div className="flex-1">
+                      <label className="text-[10px] text-gray-400 font-medium uppercase tracking-wide">Âm On</label>
+                      <input value={editForm.onyomi || ''} onChange={(e) => setEditForm({ ...editForm, onyomi: e.target.value })} className="w-full px-3 py-2 border rounded-lg text-sm" />
+                    </div>
+                    <div className="flex-1">
+                      <label className="text-[10px] text-gray-400 font-medium uppercase tracking-wide">Âm Kun</label>
+                      <input value={editForm.kunyomi || ''} onChange={(e) => setEditForm({ ...editForm, kunyomi: e.target.value })} className="w-full px-3 py-2 border rounded-lg text-sm" />
+                    </div>
+                  </div>
+                  <div>
+                    <label className="text-[10px] text-gray-400 font-medium uppercase tracking-wide">Ghi nhớ (mnemonic)</label>
+                    <textarea value={editForm.mnemonic || ''} onChange={(e) => setEditForm({ ...editForm, mnemonic: e.target.value })} className="w-full h-16 p-2 border rounded-lg text-xs resize-y" placeholder="VD: Tay (扌) cầm vũ khí (殳) **ném**" />
+                  </div>
+                  <div>
+                    <div className="flex items-center justify-between mb-1">
+                      <label className="text-[10px] text-gray-400 font-medium uppercase tracking-wide">Từ vựng ({editForm.vocab.length})</label>
+                      <button onClick={() => setEditForm({ ...editForm, vocab: [...editForm.vocab, { word: '', reading: '', meaning: '', highlight: '' }] })} className="text-[10px] px-2 py-0.5 bg-indigo-100 text-indigo-600 rounded">+ Thêm</button>
+                    </div>
+                    {editForm.vocab.map((v, vi) => (
+                      <div key={vi} className="mb-2 p-2 bg-gray-50 rounded-lg space-y-1.5 relative">
+                        <button onClick={() => setEditForm({ ...editForm, vocab: editForm.vocab.filter((_, j) => j !== vi) })} className="absolute top-1 right-1 text-[10px] text-red-400 hover:text-red-600" aria-label="Xóa từ vựng">✕</button>
+                        <div className="flex gap-1.5">
+                          <input value={v.word} onChange={(e) => { const v2 = [...editForm.vocab]; v2[vi] = { ...v2[vi], word: e.target.value }; setEditForm({ ...editForm, vocab: v2 }); }} placeholder="Từ" className="flex-1 px-2 py-1 border rounded text-xs" />
+                          <input value={v.reading} onChange={(e) => { const v2 = [...editForm.vocab]; v2[vi] = { ...v2[vi], reading: e.target.value }; setEditForm({ ...editForm, vocab: v2 }); }} placeholder="Đọc" className="flex-1 px-2 py-1 border rounded text-xs" />
+                          <input value={v.meaning} onChange={(e) => { const v2 = [...editForm.vocab]; v2[vi] = { ...v2[vi], meaning: e.target.value }; setEditForm({ ...editForm, vocab: v2 }); }} placeholder="Nghĩa" className="flex-1 px-2 py-1 border rounded text-xs" />
+                        </div>
+                        <div className="flex gap-1.5">
+                          <input value={v.highlight || ''} onChange={(e) => { const v2 = [...editForm.vocab]; v2[vi] = { ...v2[vi], highlight: e.target.value }; setEditForm({ ...editForm, vocab: v2 }); }} placeholder="Highlight (vd: 食)" className="flex-1 px-2 py-1 border rounded text-xs" />
+                          <input value={v.highlightReading || ''} onChange={(e) => { const v2 = [...editForm.vocab]; v2[vi] = { ...v2[vi], highlightReading: e.target.value }; setEditForm({ ...editForm, vocab: v2 }); }} placeholder="Highlight đọc" className="flex-1 px-2 py-1 border rounded text-xs" />
+                          <input value={v.highlightMeaning || ''} onChange={(e) => { const v2 = [...editForm.vocab]; v2[vi] = { ...v2[vi], highlightMeaning: e.target.value }; setEditForm({ ...editForm, vocab: v2 }); }} placeholder="Highlight nghĩa" className="flex-1 px-2 py-1 border rounded text-xs" />
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                  <div className="flex gap-2 pt-1">
+                    <button onClick={saveEdit} className="text-xs px-3 py-1.5 bg-emerald-500 text-white rounded-lg">💾 Lưu</button>
+                    <button onClick={() => setEditIdx(null)} className="text-xs px-3 py-1.5 bg-gray-200 rounded-lg">Hủy</button>
+                  </div>
+                </div>
+              );
+            }
+            return (
+              <div key={i} className="flex items-center justify-between bg-white rounded-xl p-3 shadow-sm border border-gray-100">
+                <div>
+                  <span className="text-2xl font-bold">{c.kanji}</span>
+                  <span className="text-sm text-gray-500 ml-2">{c.hanViet} — {c.meaning}</span>
+                </div>
+                <div className="flex gap-1">
+                  <button onClick={() => startEdit(i)} className="text-xs px-2 py-1 text-gray-400 hover:text-indigo-600 hover:bg-indigo-50 rounded" aria-label={`Sửa ${c.kanji}`}>✏️</button>
+                  <button onClick={() => handleDeleteKanji(i)} className="text-xs px-2 py-1 text-red-400 hover:text-red-600 hover:bg-red-50 rounded" aria-label={`Xóa ${c.kanji}`}>🗑️</button>
+                </div>
+              </div>
+            );
+          })}
         </div>
       </div>
     );
