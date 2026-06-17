@@ -20,7 +20,7 @@ export default function SessionKanjiPage() {
   const { id } = useParams();
   const { isAdmin } = useAuth();
   const sessionId = parseInt(id as string);
-  const baseCards = sessionKanji[sessionId] || [];
+  const baseCards = (sessionKanji[sessionId] || []).map(c => ({ ...c, vocab: c.vocab || [] }));
   const [cards, setCards] = useState<SessionKanjiEntry[]>(baseCards);
 
   useEffect(() => {
@@ -31,8 +31,8 @@ export default function SessionKanjiPage() {
     const merged = baseCards.map(c => map[c.kanji] ? { ...c, mnemonic: map[c.kanji] } : c);
 
     getSessionData(sessionId, 'kanji').then(data => {
-      const all = (data as SessionKanjiEntry[]).length ? [...merged, ...(data as SessionKanjiEntry[])] : merged;
-      setCards(all);
+      const all = ((data as SessionKanjiEntry[]) || []).length ? [...merged, ...((data as SessionKanjiEntry[]) || [])] : merged;
+      setCards(all.map(c => ({ ...c, vocab: c.vocab || [] })));
     });
   }, [sessionId]);
   const [index, setIndex] = useState(0);
@@ -50,6 +50,8 @@ export default function SessionKanjiPage() {
   // Spacebar + Arrow shortcuts
   useEffect(() => {
     const handler = (e: KeyboardEvent) => {
+      const tag = (e.target as HTMLElement).tagName;
+      if (tag === 'INPUT' || tag === 'TEXTAREA' || (e.target as HTMLElement).isContentEditable) return;
       if (e.code === 'Space') { e.preventDefault(); setFlipped((f) => !f); }
       if (e.code === 'ArrowLeft') { setFlipped(false); setIndex((i) => (i - 1 + cards.length) % cards.length); }
       if (e.code === 'ArrowRight') { setFlipped(false); setIndex((i) => (i + 1) % cards.length); }
@@ -77,6 +79,9 @@ export default function SessionKanjiPage() {
 
   const [isShuffled, setIsShuffled] = useState(false);
   const [managing, setManaging] = useState(false);
+  const [fatalError, setFatalError] = useState<string | null>(null);
+  const forceManage = typeof window !== 'undefined' && new URLSearchParams(window.location.search).get('force') === 'manage';
+  useEffect(() => { if (forceManage) { setManaging(true); setMode('viewall'); } }, [forceManage]);
   const [editJson, setEditJson] = useState(false);
   const [editJsonText, setEditJsonText] = useState('');
   const [editJsonError, setEditJsonError] = useState('');

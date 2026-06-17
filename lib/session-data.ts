@@ -26,6 +26,10 @@ export async function addSessionData(sessionNum: number, type: SessionDataType, 
     }, { onConflict: 'session_num,type' });
 }
 
+export async function deleteAllSessionData(sessionNum: number, type: SessionDataType): Promise<void> {
+  await supabase.from('session_data').delete().eq('session_num', sessionNum).eq('type', type);
+}
+
 export async function deleteSessionItem(sessionNum: number, type: SessionDataType, index: number): Promise<void> {
   const existing = await getSessionData(sessionNum, type);
   existing.splice(index, 1);

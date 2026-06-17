@@ -95,6 +95,8 @@ export default function SessionFlashCard() {
   useEffect(() => {
     function handleKey(e: KeyboardEvent) {
       if (mode !== 'flashcard' || remaining === 0) return;
+      const tag = (e.target as HTMLElement).tagName;
+      if (tag === 'INPUT' || tag === 'TEXTAREA' || (e.target as HTMLElement).isContentEditable) return;
       if (e.code === 'Space') { e.preventDefault(); setFlipped(f => !f); }
       if (e.code === 'ArrowLeft') { e.preventDefault(); prevCard(); }
       if (e.code === 'ArrowRight') { e.preventDefault(); nextCard(); }
