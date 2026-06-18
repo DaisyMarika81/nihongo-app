@@ -33,6 +33,16 @@ export function getExampleMeaning(ex: string | GrammarExample, fallback = ''): s
   return typeof ex === 'string' ? fallback : ex.vietnamese || '';
 }
 
+export type GrammarUsage = {
+  label: string;
+  meaning: string;
+  pattern?: string;
+  example?: string | GrammarExample;
+  exampleMeaning?: string;
+  exampleRomaji?: string;
+  note?: string;
+};
+
 export type SessionGrammar = {
   id: string;
   pattern: string;
@@ -44,6 +54,7 @@ export type SessionGrammar = {
   exampleMeaning?: string;
   note?: string;
   jlpt?: string;
+  usages?: GrammarUsage[];
 };
 
 export const sessionGrammar: Record<number, SessionGrammar[]> = {

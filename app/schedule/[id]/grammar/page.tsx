@@ -3,7 +3,7 @@
 import { useState, useEffect } from 'react';
 import { useParams } from 'next/navigation';
 import { useAuth } from '@/lib/auth';
-import { sessionGrammar, SessionGrammar, getExampleText, getExampleRomaji, getExampleMeaning } from '@/data/session-grammar';
+import { sessionGrammar, SessionGrammar, GrammarUsage, GrammarExample, getExampleText, getExampleRomaji, getExampleMeaning } from '@/data/session-grammar';
 import Link from 'next/link';
 import { speak } from '@/lib/speak';
 import { getSessionData, deleteSessionItem } from '@/lib/session-data';
@@ -164,6 +164,36 @@ export default function SessionGrammarPage() {
                   className="w-full px-3 py-2 border rounded-lg text-sm" placeholder="Example meaning" />
                 <input value={editData.note || ''} onChange={e => setEditData({ ...editData, note: e.target.value })}
                   className="w-full px-3 py-2 border rounded-lg text-sm" placeholder="Note (optional)" />
+                {/* Usages editor */}
+                <details className="border border-gray-200 rounded-lg">
+                  <summary className="px-3 py-2 text-xs font-medium text-gray-500 cursor-pointer hover:bg-gray-50 rounded-lg">
+                    📋 Cách dùng ({((editData.usages || []) as GrammarUsage[]).length})
+                  </summary>
+                  <div className="p-3 space-y-3 border-t border-gray-200">
+                    {(editData.usages || []).map((u, ui) => (
+                      <div key={ui} className="space-y-1.5 p-2 bg-gray-50 rounded-lg relative">
+                        <button onClick={() => { const arr = [...(editData.usages || [])]; arr.splice(ui, 1); setEditData({ ...editData, usages: arr }); }}
+                          className="absolute top-1 right-1 text-[10px] text-red-400 hover:text-red-600" aria-label="Xóa cách dùng">✕</button>
+                        <input value={u.label} onChange={e => { const arr = [...(editData.usages || [])]; arr[ui] = { ...arr[ui], label: e.target.value }; setEditData({ ...editData, usages: arr }); }}
+                          className="w-full px-2 py-1 border rounded text-xs font-medium" placeholder="Label (VD: Cách dùng 1)" />
+                        <input value={u.meaning} onChange={e => { const arr = [...(editData.usages || [])]; arr[ui] = { ...arr[ui], meaning: e.target.value }; setEditData({ ...editData, usages: arr }); }}
+                          className="w-full px-2 py-1 border rounded text-xs" placeholder="Meaning" />
+                        <input value={u.pattern || ''} onChange={e => { const arr = [...(editData.usages || [])]; arr[ui] = { ...arr[ui], pattern: e.target.value }; setEditData({ ...editData, usages: arr }); }}
+                          className="w-full px-2 py-1 border rounded text-xs" placeholder="Pattern riêng (optional)" />
+                        <input value={typeof u.example === 'string' ? (u.example || '') : (u.example?.japanese || '')}
+                          onChange={e => { const arr = [...(editData.usages || [])]; arr[ui] = { ...arr[ui], example: e.target.value }; setEditData({ ...editData, usages: arr }); }}
+                          className="w-full px-2 py-1 border rounded text-xs" placeholder="Example (Japanese)" />
+                        <input value={u.exampleMeaning || (typeof u.example !== 'string' && u.example?.vietnamese ? u.example.vietnamese : '')}
+                          onChange={e => { const arr = [...(editData.usages || [])]; arr[ui] = { ...arr[ui], exampleMeaning: e.target.value }; setEditData({ ...editData, usages: arr }); }}
+                          className="w-full px-2 py-1 border rounded text-xs" placeholder="Example meaning" />
+                        <input value={u.note || ''} onChange={e => { const arr = [...(editData.usages || [])]; arr[ui] = { ...arr[ui], note: e.target.value }; setEditData({ ...editData, usages: arr }); }}
+                          className="w-full px-2 py-1 border rounded text-xs" placeholder="Ghi chú (optional)" />
+                      </div>
+                    ))}
+                    <button onClick={() => setEditData({ ...editData, usages: [...(editData.usages || []), { label: '', meaning: '' }] })}
+                      className="text-xs px-3 py-1.5 bg-indigo-100 text-indigo-600 rounded-lg hover:bg-indigo-200">+ Thêm cách dùng</button>
+                  </div>
+                </details>
                 <div className="flex gap-2">
                   <button onClick={saveEdit} className="text-xs px-3 py-1.5 bg-emerald-500 text-white rounded-lg">💾 Lưu</button>
                   <button onClick={() => setEditIdx(null)} className="text-xs px-3 py-1.5 bg-gray-200 rounded-lg">Hủy</button>
@@ -266,19 +296,54 @@ export default function SessionGrammarPage() {
                   })}
                 </div>}
 
-                {/* Example with grammar highlight */}
-                  <div className="bg-gray-50 rounded-xl p-4 border border-gray-100 space-y-2">
-                  <div className="flex items-start gap-2">
-                    <button onClick={() => speak(getExampleText(g.example))} className="text-sm mt-0.5 shrink-0" aria-label="Phát âm">🔊</button>
-                    <span
-                      className="text-lg font-semibold leading-relaxed break-words"
-                      style={{ color: '#333' }}
-                      dangerouslySetInnerHTML={{ __html: highlightExample(getExampleText(g.example), g.pattern) }}
-                    />
+                {/* Usages (multi-way) or default example */}
+                {g.usages && g.usages.length > 0 ? (
+                  <div className="space-y-3">
+                    {g.usages.map((u, ui) => (
+                      <div key={ui} className="bg-gray-50 rounded-xl p-4 border border-gray-100 space-y-2">
+                        <div className="flex items-center gap-2">
+                          <span className="text-[11px] font-bold text-amber-600 bg-amber-50 px-2 py-0.5 rounded shrink-0">{u.label}</span>
+                          {u.pattern && <span className="text-xs font-mono text-indigo-500 bg-indigo-50 px-2 py-0.5 rounded">{u.pattern}</span>}
+                        </div>
+                        <div className="text-sm" style={{ color: '#555' }}>{u.meaning}</div>
+                        {u.example != null && (() => {
+                          const ex = u.example as string | GrammarExample;
+                          const exText = getExampleText(ex);
+                          const exPattern = u.pattern || g.pattern;
+                          return (
+                            <div className="space-y-1.5">
+                              <div className="flex items-start gap-2">
+                                <button onClick={() => speak(exText)} className="text-sm mt-0.5 shrink-0" aria-label="Phát âm">🔊</button>
+                                <span className="text-base font-semibold leading-relaxed break-words" style={{ color: '#333' }}
+                                  dangerouslySetInnerHTML={{ __html: highlightExample(exText, exPattern) }} />
+                              </div>
+                              {(u.exampleRomaji || getExampleRomaji(ex)) && (
+                                <div className="text-sm italic" style={{ color: '#666' }}>{u.exampleRomaji || getExampleRomaji(ex)}</div>
+                              )}
+                              {(u.exampleMeaning || getExampleMeaning(ex)) && (
+                                <div className="text-[15px]" style={{ color: '#555' }}>{u.exampleMeaning || getExampleMeaning(ex)}</div>
+                              )}
+                            </div>
+                          );
+                        })()}
+                        {u.note && <div className="text-sm" style={{ color: '#777' }}>💡 {u.note}</div>}
+                      </div>
+                    ))}
                   </div>
-                  <div className="text-sm italic" style={{ color: '#666' }}>{getExampleRomaji(g.example, g.exampleRomaji)}</div>
-                  <div className="text-[15px]" style={{ color: '#555' }}>{getExampleMeaning(g.example, g.exampleMeaning)}</div>
-                </div>
+                ) : (
+                  <div className="bg-gray-50 rounded-xl p-4 border border-gray-100 space-y-2">
+                    <div className="flex items-start gap-2">
+                      <button onClick={() => speak(getExampleText(g.example))} className="text-sm mt-0.5 shrink-0" aria-label="Phát âm">🔊</button>
+                      <span
+                        className="text-lg font-semibold leading-relaxed break-words"
+                        style={{ color: '#333' }}
+                        dangerouslySetInnerHTML={{ __html: highlightExample(getExampleText(g.example), g.pattern) }}
+                      />
+                    </div>
+                    <div className="text-sm italic" style={{ color: '#666' }}>{getExampleRomaji(g.example, g.exampleRomaji)}</div>
+                    <div className="text-[15px]" style={{ color: '#555' }}>{getExampleMeaning(g.example, g.exampleMeaning)}</div>
+                  </div>
+                )}
               </div>
             )}
           </div>

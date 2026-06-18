@@ -25,7 +25,17 @@ const TEMPLATES: Record<SessionDataType, string> = {
     "example": "",
     "exampleRomaji": "",
     "exampleMeaning": "",
-    "note": ""
+    "note": "",
+    "usages": [
+      {
+        "label": "Cách dùng 1",
+        "meaning": "",
+        "pattern": "",
+        "example": "",
+        "exampleMeaning": "",
+        "note": ""
+      }
+    ]
   }
 ]`,
   kanji: `[
@@ -93,7 +103,25 @@ const EXAMPLES: Record<SessionDataType, string> = {
       "japanese": "毎日、寝る前に、リキアプリでのビデオを見ることにしている。",
       "romaji": "Mainichi, neru mae ni, riki apuri de no bideo wo miru koto ni shite iru.",
       "vietnamese": "Mỗi ngày, trước khi ngủ, tôi đều xem video trên Riki."
-    }
+    },
+    "usages": [
+      {
+        "label": "Cách dùng 1",
+        "meaning": "Hành động có chủ ý trở thành thói quen",
+        "pattern": "V-る + ことにしている",
+        "example": "毎日、ジョギングをすることにしている。",
+        "exampleMeaning": "Tôi đặt quyết tâm chạy bộ mỗi ngày.",
+        "note": "Thường dùng với động từ chỉ hành động có chủ đích"
+      },
+      {
+        "label": "Cách dùng 2",
+        "meaning": "Không làm gì đó như một nguyên tắc",
+        "pattern": "V-ない + ことにしている",
+        "example": "夜遅く、コーヒーを飲まないことにしている。",
+        "exampleMeaning": "Tôi không uống cà phê vào tối muộn.",
+        "note": "Dạng phủ định của thói quen"
+      }
+    ]
   }
 ]`,
   kanji: `[
