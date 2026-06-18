@@ -203,7 +203,7 @@ export default function SessionGrammarPage() {
               <div className="space-y-3">
                 {/* Level tag */}
                 {g.jlpt && (
-                  <span className="inline-block text-[11px] font-bold text-indigo-500 bg-indigo-50 px-2 py-0.5 rounded-md">{g.jlpt}</span>
+                  <span className="inline-block text-[11px] font-bold text-indigo-700 bg-indigo-100 px-2 py-0.5 rounded-md">{g.jlpt}</span>
                 )}
 
                 {/* Formula block */}
@@ -303,7 +303,7 @@ export default function SessionGrammarPage() {
                       <div key={ui} className="bg-gray-50 rounded-xl p-4 border border-gray-100 space-y-2">
                         <div className="flex items-center gap-2">
                           <span className="text-[11px] font-bold text-amber-600 bg-amber-50 px-2 py-0.5 rounded shrink-0">{u.label}</span>
-                          {u.pattern && <span className="text-xs font-mono text-indigo-500 bg-indigo-50 px-2 py-0.5 rounded">{u.pattern}</span>}
+                          {u.pattern && <span className="text-xs font-mono text-indigo-700 bg-indigo-100 px-2 py-0.5 rounded">{u.pattern}</span>}
                         </div>
                         <div className="text-sm" style={{ color: '#555' }}>{u.meaning}</div>
                         {u.example != null && (() => {
