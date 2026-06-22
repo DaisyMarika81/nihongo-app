@@ -15,15 +15,54 @@ function shuffle<T>(arr: T[]): T[] {
 }
 
 type Phase = 'config' | 'quiz' | 'result';
+type QuizMode = 'meaning' | 'fillblank';
+type FillBlankQ = { sentence: string; blanked: string; correct: string; card: SessionCard; hint?: string };
+
+function getWord(c: SessionCard) { return c.kanji || c.japanese; }
+
+function findAndBlank(sentence: string, target: string): { found: boolean; blanked: string; removed: string } {
+  const idx = sentence.indexOf(target);
+  if (idx !== -1) {
+    return { found: true, blanked: sentence.slice(0, idx) + '____' + sentence.slice(idx + target.length), removed: target };
+  }
+  // Try partial: target might conjugate (e.g. 通う → 通って)
+  const base = target.replace(/[うくぐすつぬぶむる]$/, '');
+  if (base.length >= 1 && sentence.includes(base)) {
+    const i = sentence.indexOf(base);
+    let end = i + base.length;
+    while (end < sentence.length && /[\u3040-\u309F\u30A0-\u30F6]/.test(sentence[end])) end++;
+    const removed = sentence.slice(i, end);
+    return { found: true, blanked: sentence.slice(0, i) + '____' + sentence.slice(end), removed };
+  }
+  return { found: false, blanked: sentence, removed: '' };
+}
+
+function generateFillBlank(cards: SessionCard[]): FillBlankQ[] {
+  const result: FillBlankQ[] = [];
+  for (const c of cards) {
+    if (!c.examples || c.examples.length === 0) continue;
+    const word = getWord(c);
+    const shuffledEx = shuffle(c.examples);
+    for (const ex of shuffledEx) {
+      const fb = findAndBlank(ex.japanese, word);
+      if (fb.found) {
+        result.push({ sentence: ex.japanese, blanked: fb.blanked, correct: fb.removed, card: c, hint: c.hiragana });
+        break;
+      }
+    }
+  }
+  return shuffle(result);
+}
 
 export default function VocabQuizPage() {
+  const [quizMode, setQuizMode] = useState<QuizMode>('meaning');
   const [phase, setPhase] = useState<Phase>('config');
   const [allCards, setAllCards] = useState<Map<number, SessionCard[]>>(new Map());
   const [selectedSessions, setSelectedSessions] = useState<Set<number>>(new Set());
   const [questionCount, setQuestionCount] = useState(20);
   const [loading, setLoading] = useState(true);
 
-  // Quiz state
+  // Quiz state (meaning mode)
   const [questions, setQuestions] = useState<SessionCard[]>([]);
   const [pool, setPool] = useState<SessionCard[]>([]);
   const [index, setIndex] = useState(0);
@@ -32,6 +71,10 @@ export default function VocabQuizPage() {
   const [score, setScore] = useState(0);
   const [wrongCards, setWrongCards] = useState<SessionCard[]>([]);
   const [showExample, setShowExample] = useState(false);
+
+  // Quiz state (fillblank mode)
+  const [fbQuestions, setFbQuestions] = useState<FillBlankQ[]>([]);
+  const [showHint, setShowHint] = useState(false);
 
   useEffect(() => {
     async function load() {
@@ -70,13 +113,20 @@ export default function VocabQuizPage() {
     setSelected(null);
     setWrongCards([]);
     setShowExample(false);
-    generateOptions(qs, allPool.length >= 4 ? allPool : cards, 0);
+    setShowHint(false);
+    if (quizMode === 'fillblank') {
+      const fbs = generateFillBlank(qs);
+      if (fbs.length === 0) return;
+      setFbQuestions(fbs);
+      generateFbOptions(fbs, allPool, 0);
+    } else {
+      generateOptions(qs, allPool.length >= 4 ? allPool : cards, 0);
+    }
     setPhase('quiz');
   }
 
   function retryWrong() {
     if (wrongCards.length < 4) {
-      // Not enough wrong cards for unique options, use full pool
       const cards: SessionCard[] = [];
       selectedSessions.forEach(s => { const c = allCards.get(s); if (c) cards.push(...c); });
       setPool(cards);
@@ -87,7 +137,14 @@ export default function VocabQuizPage() {
       setSelected(null);
       setWrongCards([]);
       setShowExample(false);
-      generateOptions(qs, cards, 0);
+      setShowHint(false);
+      if (quizMode === 'fillblank') {
+        const fbs = generateFillBlank(qs);
+        setFbQuestions(fbs);
+        generateFbOptions(fbs, cards, 0);
+      } else {
+        generateOptions(qs, cards, 0);
+      }
       setPhase('quiz');
     } else {
       startQuiz(wrongCards);
@@ -100,20 +157,30 @@ export default function VocabQuizPage() {
     setOptions(shuffle([correct, ...wrong]));
   }
 
+  function generateFbOptions(fbs: FillBlankQ[], allPool: SessionCard[], idx: number) {
+    const correct = fbs[idx].correct;
+    const wrong = shuffle(allPool.filter(c => getWord(c) !== correct && getMeaning(c) !== correct)).slice(0, 3).map(c => getWord(c));
+    setOptions(shuffle([correct, ...wrong]));
+  }
+
   function handleAnswer(i: number) {
     if (selected !== null) return;
     setSelected(i);
-    const q = questions[index];
-    const isCorrect = options[i] === getMeaning(q);
+    const correctAnswer = quizMode === 'fillblank' ? fbQuestions[index].correct : getMeaning(questions[index]);
+    const isCorrect = options[i] === correctAnswer;
     if (isCorrect) {
       setScore(s => s + 1);
-      // Show example if available
+      if (quizMode === 'fillblank') {
+        setShowExample(true);
+        return;
+      }
+      const q = questions[index];
       if (q.examples && q.examples.length > 0) {
         setShowExample(true);
-        return; // Wait for user to tap "Tiếp"
+        return;
       }
     } else {
-      setWrongCards(prev => [...prev, q]);
+      setWrongCards(prev => [...prev, questions[index]]);
     }
     setTimeout(() => goNext(), 1200);
   }
@@ -121,12 +188,18 @@ export default function VocabQuizPage() {
   function goNext() {
     setSelected(null);
     setShowExample(false);
-    if (index + 1 >= questions.length) {
+    setShowHint(false);
+    const total = quizMode === 'fillblank' ? fbQuestions.length : questions.length;
+    if (index + 1 >= total) {
       setPhase('result');
     } else {
       const next = index + 1;
       setIndex(next);
-      generateOptions(questions, pool, next);
+      if (quizMode === 'fillblank') {
+        generateFbOptions(fbQuestions, pool, next);
+      } else {
+        generateOptions(questions, pool, next);
+      }
     }
   }
 
@@ -170,6 +243,22 @@ export default function VocabQuizPage() {
             </div>
 
             <div className="mb-6">
+              <label className="text-sm font-medium text-gray-700 mb-2 block">Chọn dạng:</label>
+              <div className="flex gap-2">
+                <button onClick={() => setQuizMode('meaning')}
+                  className={`px-4 py-2 rounded-xl text-sm font-medium transition-all ${quizMode === 'meaning' ? 'text-white shadow-sm' : 'bg-gray-100 text-gray-500'}`}
+                  style={quizMode === 'meaning' ? { background: '#6C63FF' } : {}}>
+                  🎯 Nghĩa
+                </button>
+                <button onClick={() => setQuizMode('fillblank')}
+                  className={`px-4 py-2 rounded-xl text-sm font-medium transition-all ${quizMode === 'fillblank' ? 'text-white shadow-sm' : 'bg-gray-100 text-gray-500'}`}
+                  style={quizMode === 'fillblank' ? { background: '#6C63FF' } : {}}>
+                  📝 Đục lỗ
+                </button>
+              </div>
+            </div>
+
+            <div className="mb-6">
               <label className="text-sm font-medium text-gray-700">Số câu hỏi:</label>
               <div className="flex items-center gap-2 mt-2">
                 <input type="number" min={1} max={totalCards} value={questionCount}
@@ -192,13 +281,14 @@ export default function VocabQuizPage() {
 
   // === RESULT ===
   if (phase === 'result') {
-    const pct = Math.round((score / questions.length) * 100);
+    const total = quizMode === 'fillblank' ? fbQuestions.length : questions.length;
+    const pct = Math.round((score / total) * 100);
     return (
       <div className="min-h-screen p-4 pb-24 max-w-md mx-auto">
         <div className="flex flex-col items-center text-center mb-6">
           <p className="text-5xl mb-4">🏆</p>
           <p className="text-xl font-bold text-gray-800">Kết quả</p>
-          <p className="text-3xl font-bold text-indigo-600 mt-3">{score}/{questions.length}</p>
+          <p className="text-3xl font-bold text-indigo-600 mt-3">{score}/{total}</p>
           <p className="text-sm text-gray-500 mt-1">{pct}% đúng</p>
           <div className="flex gap-3 mt-6">
             <button onClick={() => startQuiz()} className="px-5 py-2 bg-gradient-to-r from-indigo-500 to-purple-500 text-white rounded-xl font-medium shadow">Làm lại</button>
@@ -234,29 +324,59 @@ export default function VocabQuizPage() {
   }
 
   // === QUIZ ===
-  const q = questions[index];
-  const correctAnswer = getMeaning(q);
+  const isFillBlank = quizMode === 'fillblank';
+  const totalQ = isFillBlank ? fbQuestions.length : questions.length;
+  const fbq = isFillBlank ? fbQuestions[index] : null;
+  const q = isFillBlank ? fbq!.card : questions[index];
+  const correctAnswer = isFillBlank ? fbq!.correct : getMeaning(q);
 
   return (
     <div className="min-h-screen p-4 pb-24 flex flex-col items-center">
       <div className="w-full max-w-md mb-4">
         <div className="flex items-center justify-between">
-          <h1 className="text-lg font-bold text-gray-800">✍️ Trắc nghiệm từ vựng</h1>
-          <span className="text-sm text-gray-500">Câu {index + 1}/{questions.length} • ✓{score}</span>
+          <h1 className="text-lg font-bold text-gray-800">{isFillBlank ? '📝 Đục lỗ' : '✍️ Trắc nghiệm từ vựng'}</h1>
+          <span className="text-sm text-gray-500">Câu {index + 1}/{totalQ} • ✓{score}</span>
         </div>
-        <p className="text-xs text-gray-400 mt-1">Chọn nghĩa đúng cho từ bên dưới</p>
+        <p className="text-xs text-gray-400 mt-1">{isFillBlank ? 'Chọn từ đúng điền vào chỗ trống' : 'Chọn nghĩa đúng cho từ bên dưới'}</p>
       </div>
 
-      {/* Question card */}
-      <div className="rounded-2xl p-8 shadow-lg text-center mb-6 w-full max-w-md" style={{ background: 'linear-gradient(135deg, #6C63FF, #8B5CF6)' }}>
-        <p className="text-4xl font-bold text-white">{q.kanji || q.japanese}</p>
-        {/* {q.hiragana && <p className="text-lg text-white/80 mt-2">{q.hiragana}</p>}
-        {q.romaji && <p className="text-sm text-white/60 italic">{q.romaji}</p>} */}
-        <button onClick={() => speak(q.kanji || q.japanese)}
-          className="mt-4 w-10 h-10 rounded-full bg-white/20 flex items-center justify-center mx-auto hover:bg-white/30 transition-all">
-          <span className="text-lg">🔊</span>
-        </button>
-      </div>
+      {isFillBlank ? (
+        <>
+          {/* Fill-blank sentence card */}
+          <div className="rounded-2xl p-6 shadow-lg mb-6 w-full max-w-md text-center" style={{ background: 'linear-gradient(135deg, #059669, #10B981)' }}>
+            <p className="text-xl sm:text-2xl font-bold text-white leading-relaxed" style={{ wordBreak: 'break-word' }}>
+              {fbq!.blanked.split('____').map((part, i, arr) => (
+                <span key={i}>
+                  {part}
+                  {i < arr.length - 1 && <span className="inline-block mx-1 px-4 py-1 rounded-lg" style={{ background: 'rgba(255,255,255,0.2)', minWidth: '80px' }}>___</span>}
+                </span>
+              ))}
+            </p>
+            <button onClick={() => speak(fbq!.sentence)}
+              className="mt-4 w-10 h-10 rounded-full bg-white/20 flex items-center justify-center mx-auto hover:bg-white/30 transition-all">
+              <span className="text-lg">🔊</span>
+            </button>
+          </div>
+          {fbq!.hint && (
+            <div className="flex items-center justify-center gap-1 mb-4 -mt-4">
+              <button onClick={() => setShowHint(!showHint)} className="text-xs text-gray-400 hover:text-gray-600 flex items-center gap-1">
+                {showHint ? <span>🙈 {fbq!.hint}</span> : <span>👁️ Gợi ý</span>}
+              </button>
+            </div>
+          )}
+        </>
+      ) : (
+        <>
+          {/* Meaning question card */}
+          <div className="rounded-2xl p-8 shadow-lg text-center mb-6 w-full max-w-md" style={{ background: 'linear-gradient(135deg, #6C63FF, #8B5CF6)' }}>
+            <p className="text-4xl font-bold text-white">{q.kanji || q.japanese}</p>
+            <button onClick={() => speak(q.kanji || q.japanese)}
+              className="mt-4 w-10 h-10 rounded-full bg-white/20 flex items-center justify-center mx-auto hover:bg-white/30 transition-all">
+              <span className="text-lg">🔊</span>
+            </button>
+          </div>
+        </>
+      )}
 
       {/* 4 options - 1 column layout */}
       <div className="flex flex-col gap-3 w-full max-w-md">
@@ -275,27 +395,41 @@ export default function VocabQuizPage() {
         })}
       </div>
 
-      {/* Show example on correct */}
-      {showExample && q.examples && (
+      {/* Show explanation on correct */}
+      {showExample && (
         <div className="mt-4 w-full max-w-md bg-emerald-50 border border-emerald-200 rounded-xl p-4">
-          <p className="text-xs font-bold text-emerald-700 mb-2">📝 Ví dụ:</p>
-          {q.examples.slice(0, 1).map((ex, i) => (
-            <div key={i}>
-              <p className="font-bold text-gray-800 text-lg">{ex.japanese}</p>
-              {ex.hiragana && <p className="text-sm text-gray-600">{ex.hiragana}</p>}
-              {ex.meaning_vi && <p className="text-sm text-emerald-700 mt-1 font-medium">{ex.meaning_vi}</p>}
-            </div>
-          ))}
-          <button onClick={goNext} className="mt-3 w-full py-2 text-white rounded-lg text-sm font-medium" style={{ background: '#6C63FF' }}>
-            Tiếp →
-          </button>
+          {isFillBlank ? (
+            <>
+              <p className="text-xs font-bold text-emerald-700 mb-2">✅ Đáp án: <span className="text-base font-mono">{fbq!.correct}</span></p>
+              <p className="font-bold text-gray-800 text-lg mt-2">{fbq!.sentence}</p>
+              {q.hiragana && <p className="text-sm text-gray-600 mt-1">{q.hiragana}</p>}
+              <p className="text-sm text-emerald-700 mt-1 font-medium">{getMeaning(q)}</p>
+              <button onClick={goNext} className="mt-3 w-full py-2 text-white rounded-lg text-sm font-medium" style={{ background: '#6C63FF' }}>
+                Tiếp →
+              </button>
+            </>
+          ) : q.examples && q.examples.length > 0 ? (
+            <>
+              <p className="text-xs font-bold text-emerald-700 mb-2">📝 Ví dụ:</p>
+              {q.examples.slice(0, 1).map((ex, i) => (
+                <div key={i}>
+                  <p className="font-bold text-gray-800 text-lg">{ex.japanese}</p>
+                  {ex.hiragana && <p className="text-sm text-gray-600">{ex.hiragana}</p>}
+                  {ex.meaning_vi && <p className="text-sm text-emerald-700 mt-1 font-medium">{ex.meaning_vi}</p>}
+                </div>
+              ))}
+              <button onClick={goNext} className="mt-3 w-full py-2 text-white rounded-lg text-sm font-medium" style={{ background: '#6C63FF' }}>
+                Tiếp →
+              </button>
+            </>
+          ) : null}
         </div>
       )}
 
-      {/* Progress bar - thicker */}
+      {/* Progress bar */}
       <div className="mt-6 w-full max-w-md">
         <div className="h-2 bg-gray-200 rounded-full overflow-hidden">
-          <div className="h-full rounded-full transition-all" style={{ width: `${((index + 1) / questions.length) * 100}%`, background: '#6C63FF' }} />
+          <div className="h-full rounded-full transition-all" style={{ width: `${((index + 1) / totalQ) * 100}%`, background: '#6C63FF' }} />
         </div>
       </div>
     </div>

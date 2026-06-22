@@ -4,7 +4,7 @@ import Navigation from './components/Navigation';
 import { Providers } from './providers';
 
 export const metadata: Metadata = {
-  title: 'Nihongo App - Học tiếng Nhật',
+  title: '日本語 App - Học tiếng Nhật',
 };
 
 export default function RootLayout({ children }: { children: React.ReactNode }) {

@@ -267,28 +267,89 @@ export default function SessionFlashCard() {
         <div className="space-y-2">
           {cards.map((c, i) => {
             const isRich = 'kanji' in c && c.kanji;
-            if (editIdx === i) {
+              if (editIdx === i) {
+              const ed = editData as Partial<SessionCard>;
               return (
                 <div key={i} className="bg-white rounded-xl p-4 shadow-sm border border-gray-100 space-y-2">
                   <div className="flex gap-2">
                     <div className="flex-1">
                       <label className="text-[10px] text-gray-400 font-medium">{isRich ? 'Kanji' : 'Japanese'}</label>
-                      <input value={isRich ? (editData.kanji || '') : (editData.japanese || '')} onChange={e => setEditData({ ...editData, ...(isRich ? { kanji: e.target.value } : { japanese: e.target.value }) })}
+                      <input value={isRich ? (ed.kanji || '') : (ed.japanese || '')} onChange={e => setEditData({ ...ed, ...(isRich ? { kanji: e.target.value } : { japanese: e.target.value }) })}
                         className="w-full px-3 py-2 border rounded-lg text-sm" />
                     </div>
-                    {isRich && (
-                      <div className="flex-1">
-                        <label className="text-[10px] text-gray-400 font-medium">Hiragana</label>
-                        <input value={editData.hiragana || ''} onChange={e => setEditData({ ...editData, hiragana: e.target.value })}
-                          className="w-full px-3 py-2 border rounded-lg text-sm" />
-                      </div>
-                    )}
+                    <div className="flex-1">
+                      <label className="text-[10px] text-gray-400 font-medium">Hiragana</label>
+                      <input value={ed.hiragana || ''} onChange={e => setEditData({ ...ed, hiragana: e.target.value })}
+                        className="w-full px-3 py-2 border rounded-lg text-sm" />
+                    </div>
                   </div>
-                  <div>
-                    <label className="text-[10px] text-gray-400 font-medium">Nghĩa</label>
-                    <input value={isRich ? (editData.meaning || '') : (editData.vietnamese || '')} onChange={e => setEditData({ ...editData, ...(isRich ? { meaning: e.target.value } : { vietnamese: e.target.value }) })}
-                      className="w-full px-3 py-2 border rounded-lg text-sm" />
+                  <div className="flex gap-2">
+                    <div className="flex-1">
+                      <label className="text-[10px] text-gray-400 font-medium">Nghĩa</label>
+                      <input value={isRich ? (ed.meaning || '') : (ed.vietnamese || '')} onChange={e => setEditData({ ...ed, ...(isRich ? { meaning: e.target.value } : { vietnamese: e.target.value }) })}
+                        className="w-full px-3 py-2 border rounded-lg text-sm" />
+                    </div>
+                    <div className="flex-1">
+                      <label className="text-[10px] text-gray-400 font-medium">Romaji</label>
+                      <input value={ed.romaji || ''} onChange={e => setEditData({ ...ed, romaji: e.target.value })}
+                        className="w-full px-3 py-2 border rounded-lg text-sm" />
+                    </div>
                   </div>
+                  {/* Examples */}
+                  <details className="border border-gray-200 rounded-lg">
+                    <summary className="px-3 py-2 text-xs font-medium text-gray-500 cursor-pointer hover:bg-gray-50 rounded-lg">
+                      📖 Ví dụ ({(ed.examples || []).length})
+                    </summary>
+                    <div className="p-3 space-y-3 border-t border-gray-200">
+                      {(ed.examples || []).map((ex, ei) => (
+                        <div key={ei} className="space-y-1.5 p-2 bg-gray-50 rounded-lg relative">
+                          <button onClick={() => { const arr = [...(ed.examples || [])]; arr.splice(ei, 1); setEditData({ ...ed, examples: arr }); }}
+                            className="absolute top-1 right-1 text-[10px] text-red-400 hover:text-red-600" aria-label="Xóa ví dụ">✕</button>
+                          <input value={ex.japanese} onChange={e => { const arr = [...(ed.examples || [])]; arr[ei] = { ...arr[ei], japanese: e.target.value }; setEditData({ ...ed, examples: arr }); }}
+                            className="w-full px-2 py-1 border rounded text-xs" placeholder="Japanese" />
+                          <div className="flex gap-1">
+                            <input value={ex.hiragana} onChange={e => { const arr = [...(ed.examples || [])]; arr[ei] = { ...arr[ei], hiragana: e.target.value }; setEditData({ ...ed, examples: arr }); }}
+                              className="flex-1 px-2 py-1 border rounded text-xs" placeholder="Hiragana" />
+                            <input value={ex.romaji} onChange={e => { const arr = [...(ed.examples || [])]; arr[ei] = { ...arr[ei], romaji: e.target.value }; setEditData({ ...ed, examples: arr }); }}
+                              className="flex-1 px-2 py-1 border rounded text-xs" placeholder="Romaji" />
+                          </div>
+                          <input value={ex.meaning_vi} onChange={e => { const arr = [...(ed.examples || [])]; arr[ei] = { ...arr[ei], meaning_vi: e.target.value }; setEditData({ ...ed, examples: arr }); }}
+                            className="w-full px-2 py-1 border rounded text-xs" placeholder="Nghĩa" />
+                        </div>
+                      ))}
+                      <button onClick={() => setEditData({ ...ed, examples: [...(ed.examples || []), { japanese: '', hiragana: '', romaji: '', meaning_vi: '' }] })}
+                        className="text-xs px-3 py-1.5 bg-indigo-100 text-indigo-600 rounded-lg hover:bg-indigo-200">+ Thêm ví dụ</button>
+                    </div>
+                  </details>
+                  {/* Antonym */}
+                  <details className="border border-gray-200 rounded-lg">
+                    <summary className="px-3 py-2 text-xs font-medium text-gray-500 cursor-pointer hover:bg-gray-50 rounded-lg">
+                      ↔ Từ trái nghĩa {ed.antonym ? '(có)' : '(không)'}
+                    </summary>
+                    <div className="p-3 space-y-1.5 border-t border-gray-200">
+                      {ed.antonym ? (
+                        <>
+                          <div className="flex gap-1">
+                            <input value={ed.antonym.kanji} onChange={e => setEditData({ ...ed, antonym: { ...ed.antonym!, kanji: e.target.value } })}
+                              className="flex-1 px-2 py-1 border rounded text-xs" placeholder="Kanji" />
+                            <input value={ed.antonym.hiragana} onChange={e => setEditData({ ...ed, antonym: { ...ed.antonym!, hiragana: e.target.value } })}
+                              className="flex-1 px-2 py-1 border rounded text-xs" placeholder="Hiragana" />
+                          </div>
+                          <div className="flex gap-1">
+                            <input value={ed.antonym.romaji} onChange={e => setEditData({ ...ed, antonym: { ...ed.antonym!, romaji: e.target.value } })}
+                              className="flex-1 px-2 py-1 border rounded text-xs" placeholder="Romaji" />
+                            <input value={ed.antonym.meaning} onChange={e => setEditData({ ...ed, antonym: { ...ed.antonym!, meaning: e.target.value } })}
+                              className="flex-1 px-2 py-1 border rounded text-xs" placeholder="Nghĩa" />
+                          </div>
+                          <button onClick={() => setEditData({ ...ed, antonym: undefined })}
+                            className="text-xs px-2 py-1 text-red-500 hover:bg-red-50 rounded">Xóa trái nghĩa</button>
+                        </>
+                      ) : (
+                        <button onClick={() => setEditData({ ...ed, antonym: { kanji: '', hiragana: '', romaji: '', meaning: '' } })}
+                          className="text-xs px-3 py-1.5 bg-indigo-100 text-indigo-600 rounded-lg hover:bg-indigo-200">+ Thêm trái nghĩa</button>
+                      )}
+                    </div>
+                  </details>
                   <div className="flex gap-2 pt-1">
                     <button onClick={saveEdit} className="text-xs px-3 py-1.5 bg-emerald-500 text-white rounded-lg">💾 Lưu</button>
                     <button onClick={() => setEditIdx(null)} className="text-xs px-3 py-1.5 bg-gray-200 rounded-lg">Hủy</button>
