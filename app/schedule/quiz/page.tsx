@@ -443,7 +443,10 @@ export default function VocabQuizPage() {
           ) : null}
           <div className="mt-3 space-y-1">
             <p className="text-base font-bold text-gray-800">{word}<span className="text-sm font-normal text-gray-500 ml-2">（{getReading(q)}）</span></p>
-            <p className="text-sm text-emerald-700 font-medium">→ {isFillBlank ? fbq?.exampleMeaning || getMeaning(q) : q.examples?.[0]?.meaning_vi || getMeaning(q)}</p>
+            <p className="text-base font-bold text-emerald-700">→ {getMeaning(q)}</p>
+            {(isFillBlank ? fbq?.exampleMeaning : q.examples?.[0]?.meaning_vi) && (
+              <p className="text-sm text-gray-500">📖 {isFillBlank ? fbq?.exampleMeaning : q.examples?.[0]?.meaning_vi}</p>
+            )}
           </div>
           <button onClick={goNext} className="mt-4 mx-auto block w-fit min-w-[140px] py-2 px-6 text-white rounded-lg text-sm font-medium shadow" style={{ background: '#6C63FF' }}>
             Tiếp →
