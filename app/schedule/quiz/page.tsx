@@ -173,21 +173,10 @@ export default function VocabQuizPage() {
     const isCorrect = options[i] === correctAnswer;
     if (isCorrect) {
       setScore(s => s + 1);
-      if (isFillBlank && quizMode === 'exam') {
-        setShowExample(true); return; // exam: always show explanation
-      }
-      if (isFillBlank && quizMode === 'study') {
-        setShowExample(true); return; // study: show explanation + meaning
-      }
-      // hard mode: show example if available
-      const q = questions[index];
-      if (q.examples && q.examples.length > 0) {
-        setShowExample(true); return;
-      }
     } else {
       setWrongCards(prev => [...prev, questions[index]]);
     }
-    setTimeout(() => goNext(), 1200);
+    setShowExample(true);
   }
 
   function goNext() {
@@ -430,24 +419,29 @@ export default function VocabQuizPage() {
         })}
       </div>
 
-      {/* Explanation after correct answer */}
+      {/* Explanation after answer */}
       {showExample && (
-        <div className="mt-4 mb-6 w-full max-w-md bg-emerald-50 border border-emerald-200 rounded-xl p-4">
-          <p className="text-xs font-bold text-emerald-700 mb-2 flex items-center gap-1">✅ <span>Chính xác</span></p>
+        <div className={`mt-4 mb-6 w-full max-w-md rounded-xl p-4 border ${selected !== null && options[selected] === correctAnswer ? 'bg-emerald-50 dark:bg-emerald-900/30 border-emerald-200 dark:border-emerald-800' : 'bg-red-50 dark:bg-red-900/30 border-red-200 dark:border-red-800'}`}>
+          <p className={`text-xs font-bold mb-2 flex items-center gap-1 ${selected !== null && options[selected] === correctAnswer ? 'text-emerald-700 dark:text-emerald-300' : 'text-red-600 dark:text-red-400'}`}>
+            {selected !== null && options[selected] === correctAnswer ? '✅ Chính xác' : '✗ Sai'}
+          </p>
           {isFillBlank ? (
             <>
-              <p className="font-bold text-gray-800 text-lg" style={{ wordBreak: 'break-word' }}>{highlightWordInSentence(fbq!.sentence, fbq!.correct)}</p>
+              <p className="font-bold text-gray-800 dark:text-gray-200 text-lg" style={{ wordBreak: 'break-word' }}>{highlightWordInSentence(fbq!.sentence, fbq!.correct)}</p>
             </>
           ) : q.examples && q.examples.length > 0 ? (
-            <p className="font-bold text-gray-800 text-lg" style={{ wordBreak: 'break-word' }}>{highlightWordInSentence(q.examples[0].japanese, word)}</p>
+            <p className="font-bold text-gray-800 dark:text-gray-200 text-lg" style={{ wordBreak: 'break-word' }}>{highlightWordInSentence(q.examples[0].japanese, word)}</p>
           ) : null}
           <div className="mt-3 space-y-1">
-            <p className="text-base font-bold text-gray-800">{word}<span className="text-sm font-normal text-gray-500 ml-2">（{getReading(q)}）</span></p>
-            <p className="text-base font-bold text-emerald-700">→ {getMeaning(q)}</p>
+            <p className="text-base font-bold text-gray-800 dark:text-gray-200">{word}<span className="text-sm font-normal text-gray-500 dark:text-gray-400 ml-2">（{getReading(q)}）</span></p>
+            <p className="text-base font-bold text-emerald-700 dark:text-emerald-300">→ {getMeaning(q)}</p>
             {(isFillBlank ? fbq?.exampleMeaning : q.examples?.[0]?.meaning_vi) && (
-              <p className="text-sm text-gray-500">📖 {isFillBlank ? fbq?.exampleMeaning : q.examples?.[0]?.meaning_vi}</p>
+              <p className="text-sm text-gray-500 dark:text-gray-400">📖 {isFillBlank ? fbq?.exampleMeaning : q.examples?.[0]?.meaning_vi}</p>
             )}
           </div>
+          {selected !== null && options[selected] !== correctAnswer && (
+            <p className="text-xs text-red-500 dark:text-red-400 mt-2">Đáp án đúng: <span className="font-bold">{correctAnswer}</span></p>
+          )}
           <button onClick={goNext} className="mt-4 mx-auto block w-fit min-w-[140px] py-2 px-6 text-white rounded-lg text-sm font-medium shadow" style={{ background: '#6C63FF' }}>
             Tiếp →
           </button>
