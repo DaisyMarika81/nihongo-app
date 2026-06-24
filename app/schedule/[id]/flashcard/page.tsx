@@ -573,7 +573,7 @@ export default function SessionFlashCard() {
         <div className={`relative w-full h-full transition-transform duration-500 [transform-style:preserve-3d] ${flipped ? '[transform:rotateY(180deg)]' : ''}`}>
           {/* Front: Kanji + Hiragana */}
           <div className="absolute inset-0 flex flex-col items-center justify-center rounded-2xl shadow-xl [backface-visibility:hidden] p-6" style={{ background: 'linear-gradient(180deg, #2d3748 0%, #3d5a5a 100%)' }}>
-            <span className="font-bold text-white" style={{ fontSize: isRich ? '5rem' : '3.5rem' }}>{isRich ? card.kanji : card.japanese}</span>
+            <span className="font-bold text-white !text-[3rem] md:!text-[5rem]" style={{ fontSize: isRich ? '5rem' : '3.5rem' }}>{isRich ? card.kanji : card.japanese}</span>
             {isRich && card.hiragana && <p className="text-2xl mt-3 text-white/90">{card.hiragana}</p>}
             {isRich && card.romaji && <p className="text-sm mt-1 text-white/50 italic">{card.romaji}</p>}
             <button onClick={(e) => { e.stopPropagation(); speak(isRich ? card.kanji! : card.japanese); }} className="mt-4 text-2xl opacity-70 hover:opacity-100 text-white" aria-label="Phát âm">🔊</button>

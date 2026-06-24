@@ -249,7 +249,7 @@ export default function SessionKanjiPage() {
             return (
               <div key={i} className="flex items-center justify-between bg-white rounded-xl p-3 shadow-sm border border-gray-100">
                 <div>
-                  <span className="text-2xl font-bold">{c.kanji}</span>
+                  <span className="text-2xl md:text-3xl font-bold">{c.kanji}</span>
                   <span className="text-sm text-gray-500 ml-2">{c.hanViet} — {c.meaning}</span>
                 </div>
                 <div className="flex gap-1">
@@ -291,7 +291,7 @@ export default function SessionKanjiPage() {
             <div key={i} className="bg-white rounded-xl p-4 shadow-sm border border-gray-100 relative">
               <span className="absolute top-2 right-3 text-[11px] text-gray-300 font-medium">{i + 1}</span>
               <div className="flex items-start gap-3">
-                <span className="text-4xl font-bold" style={{ color: '#6C63FF' }}>{c.kanji}</span>
+                <span className="text-4xl md:text-5xl font-bold" style={{ color: '#6C63FF' }}>{c.kanji}</span>
                 <div className="flex-1 pt-1">
                   <div className="flex items-baseline gap-2 flex-wrap">
                     <span className="text-sm font-bold text-amber-500">{c.hanViet}</span>
@@ -308,7 +308,7 @@ export default function SessionKanjiPage() {
                 <div className="mt-3 space-y-1.5">
                   {c.vocab.map((v, j) => (
                     <div key={j} className="bg-gray-50 rounded-lg px-3 py-2">
-                      <div className="text-sm font-bold text-gray-800" dangerouslySetInnerHTML={{ __html: v.word.replace(new RegExp(`(${escapeRegex(v.highlight || c.kanji)})`, 'g'), '<span class="text-amber-500">$1</span>') }} />
+                      <div className="text-sm sm:!text-xl font-bold text-gray-800" dangerouslySetInnerHTML={{ __html: v.word.replace(new RegExp(`(${escapeRegex(v.highlight || c.kanji)})`, 'g'), '<span class="text-amber-500">$1</span>') }} />
                       <div className="text-xs text-gray-400 mt-0.5">{(() => { const hl = v.highlightReading || toHiragana(c.onyomi || '') || toHiragana(c.kunyomi || ''); if (!hl) return v.reading; const parts = v.reading.split(new RegExp(`(${escapeRegex(hl)})`, 'g')); return parts.map((p, j) => p.toLowerCase() === hl.toLowerCase() ? <span key={j} className="text-amber-500 font-medium">{p}</span> : p); })()}</div>
                       <div className="text-xs text-gray-600">{(() => { if (!v.highlightMeaning) return v.meaning; const parts = v.meaning.split(new RegExp(`(${escapeRegex(v.highlightMeaning)})`, 'gi')); return parts.map((p, j) => p.toLowerCase() === v.highlightMeaning!.toLowerCase() ? <span key={j} className="text-amber-500 font-medium">{p}</span> : p); })()}</div>
                     </div>
@@ -360,7 +360,7 @@ export default function SessionKanjiPage() {
                 setQSelected(i);
                 if (opt === q.correctKanji) setQScore((s) => s + 1);
                 setTimeout(() => { setQSelected(null); setQIdx((idx) => idx + 1); }, 1200);
-              }} className={`${cls} py-5 rounded-xl text-3xl font-bold transition-all shadow-sm`}>
+              }} className={`${cls} py-5 rounded-xl text-3xl md:text-4xl font-bold transition-all shadow-sm`}>
                 {opt}
               </button>
             );
@@ -386,7 +386,7 @@ export default function SessionKanjiPage() {
             <p className="font-bold text-red-500 mb-2">Cần ôn lại:</p>
             {[...unknown].map((i) => (
               <div key={i} className="bg-white rounded-xl p-3 mb-2 shadow-sm border border-gray-100">
-                <span className="text-2xl font-bold">{cards[i].kanji}</span>
+                <span className="text-2xl md:text-3xl font-bold">{cards[i].kanji}</span>
                 <span className="text-sm text-gray-500 ml-2">{cards[i].hanViet} — {cards[i].meaning}</span>
               </div>
             ))}
@@ -427,13 +427,13 @@ export default function SessionKanjiPage() {
         <div className="absolute inset-0 rounded-2xl" style={{ transformStyle: 'preserve-3d', transition: 'transform 0.3s', transform: flipped ? 'rotateY(180deg)' : 'rotateY(0deg)' }}>
           {/* Front */}
           <div className="absolute inset-0 rounded-2xl shadow-xl p-4 flex flex-col items-center justify-center gap-3 cursor-pointer select-none" style={{ backfaceVisibility: 'hidden', background: 'linear-gradient(180deg, #2d3748 0%, #3d5a5a 100%)' }} onClick={() => setFlipped(f => !f)}>
-            <span className="text-8xl font-bold text-white">{card.kanji}</span>
+            <span className="text-8xl md:text-9xl font-bold text-white">{card.kanji}</span>
             <span className="text-lg text-amber-300/90 font-medium">{card.hanViet} — {card.meaning}</span>
           </div>
           {/* Back */}
           <div className="absolute inset-0 rounded-2xl shadow-xl p-4 overflow-y-auto cursor-pointer select-none" style={{ backfaceVisibility: 'hidden', transform: 'rotateY(180deg)', background: 'linear-gradient(180deg, #2d3748 0%, #3d5a5a 100%)' }} onClick={() => setFlipped(f => !f)}>
             <div className="flex flex-col items-center relative w-full min-h-full">
-              <span className="text-5xl font-bold text-white">{card.kanji}</span>
+              <span className="text-5xl md:text-6xl font-bold text-white">{card.kanji}</span>
               <span className="text-lg mt-0.5 font-semibold"><span className="text-white">{card.hanViet}</span> <span className="text-amber-300">— {card.meaning}</span></span>
               <div className="text-center text-white/80 text-sm">
                 {card.onyomi && <span className="mr-2">音: {toHiragana(card.onyomi)}</span>}
