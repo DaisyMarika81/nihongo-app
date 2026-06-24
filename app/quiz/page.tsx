@@ -206,7 +206,7 @@ function QuizPage() {
   }
 
   useEffect(() => {
-    if (!mode || finished || questions.length === 0 || showImportConfig || quizStyle === 'test') return;
+    if (!mode || finished || questions.length === 0 || showImportConfig || quizStyle === 'test' || mode === 'Import') return;
     const id = setInterval(() => {
       setTimer((t) => {
         if (t <= 1) {
@@ -262,6 +262,7 @@ function QuizPage() {
     setSelectedAnswers(new Array(wrongQs.length).fill(-1));
     setCurrent(0);
     setSubmitted(false);
+    setFinished(false);
     setScore(0);
   }
 
@@ -660,8 +661,133 @@ function QuizPage() {
     );
   }
 
+  // === Import instant mode in progress ===
+  if (mode === 'Import' && quizStyle === 'instant' && !finished) {
+    const q = questions[current];
+    const hasAnswered = selectedAnswers[current] !== -1;
+    const selectedIdx = selectedAnswers[current];
+    const isCorrect = hasAnswered && selectedIdx === q.correctIndex;
+    const isLast = current + 1 >= questions.length;
+
+    return (
+      <div className="min-h-screen flex flex-col items-center justify-center gap-6 p-4 pb-24">
+        <div className="w-full max-w-lg flex justify-between text-gray-500 text-sm">
+          <span className="font-medium">📥 Import</span>
+          <span>Câu {current + 1}/{questions.length}</span>
+          <span className="font-medium text-emerald-500">✓ {score}</span>
+        </div>
+        <div className="w-full max-w-lg h-2 bg-gray-200 rounded-full overflow-hidden">
+          <div className="h-full bg-gradient-to-r from-emerald-400 to-teal-500 transition-all duration-300 rounded-full" style={{ width: `${((current + 1) / questions.length) * 100}%` }} />
+        </div>
+        <div className="flex flex-col items-center gap-6 w-full max-w-lg">
+          <div className="text-4xl font-bold text-gray-800 min-h-[3rem] flex items-center">{q.question}</div>
+          <div className="grid grid-cols-2 gap-3 w-full">
+            {q.options.map((opt, i) => {
+              let cls = 'bg-white border-2 border-gray-200 text-gray-700 hover:border-emerald-300 hover:bg-emerald-50';
+              if (hasAnswered) {
+                if (i === q.correctIndex) cls = 'bg-emerald-100 border-2 border-emerald-400 text-emerald-700';
+                else if (i === selectedIdx) cls = 'bg-red-100 border-2 border-red-400 text-red-700';
+              }
+              return (
+                <button key={i} disabled={hasAnswered} onClick={() => {
+                  const next = [...selectedAnswers];
+                  next[current] = i;
+                  setSelectedAnswers(next);
+                }}
+                  className={`font-semibold py-4 px-4 rounded-xl transition-all text-sm shadow-sm disabled:cursor-default ${cls}`}>
+                  {opt}
+                </button>
+              );
+            })}
+          </div>
+          {hasAnswered && (
+            <div className={`w-full p-4 rounded-xl text-sm ${isCorrect ? 'bg-emerald-50 border border-emerald-200' : 'bg-red-50 border border-red-200'}`}>
+              <p className={`font-bold ${isCorrect ? 'text-emerald-600' : 'text-red-500'}`}>
+                {isCorrect ? '✅ Chính xác!' : '❌ Sai rồi!'}
+              </p>
+              {!isCorrect && (
+                <p className="text-gray-600 mt-1">
+                  Đáp án đúng: <span className="font-semibold text-emerald-600">{q.options[q.correctIndex]}</span>
+                </p>
+              )}
+            </div>
+          )}
+        </div>
+        {hasAnswered && (
+          <button onClick={() => {
+            if (isCorrect) setScore((s) => s + 1);
+            if (isLast) {
+              setFinished(true);
+            } else {
+              setCurrent((c) => c + 1);
+            }
+          }}
+            className="px-8 py-3 rounded-xl font-bold bg-gradient-to-r from-emerald-400 to-teal-500 text-white shadow-lg hover:scale-105 transition-all"
+          >
+            {isLast ? '📊 Xem kết quả' : 'Tiếp →'}
+          </button>
+        )}
+      </div>
+    );
+  }
+
   // === Finished (instant mode) ===
   if (finished) {
+    if (mode === 'Import' && quizStyle === 'instant') {
+      const total = questions.length;
+      const correct = score;
+      const wrong = total - correct;
+      const pct = Math.round((correct / total) * 100);
+
+      return (
+        <div className="min-h-screen flex flex-col items-center justify-center gap-6 p-4 pb-24">
+          <h1 className="text-3xl font-bold text-gray-800">🎉 Kết quả</h1>
+          <div className="text-6xl font-bold text-transparent bg-clip-text bg-gradient-to-r from-emerald-400 to-teal-500">{pct}%</div>
+          <p className="text-gray-600 text-xl">
+            ✅ {correct} / {total} đúng
+            {wrong > 0 && <span className="text-red-400 ml-2">❌ {wrong} sai</span>}
+          </p>
+          <div className="w-full max-w-lg space-y-2 max-h-80 overflow-y-auto">
+            {questions.map((q, i) => {
+              const isCorrect = selectedAnswers[i] === q.correctIndex;
+              return (
+                <div key={i} className={`p-3 rounded-xl border-2 text-sm ${isCorrect ? 'border-emerald-200 bg-emerald-50' : 'border-red-200 bg-red-50'}`}>
+                  <div className="flex items-start gap-2">
+                    <span className={`font-bold ${isCorrect ? 'text-emerald-600' : 'text-red-500'}`}>{isCorrect ? '✅' : '❌'}</span>
+                    <div className="flex-1">
+                      <div className="font-semibold text-gray-800">{q.question}</div>
+                      <div className="text-gray-500 mt-1">
+                        {isCorrect ? (
+                          <span className="text-emerald-600">✓ {q.options[q.correctIndex]}</span>
+                        ) : (
+                          <span>
+                            <span className="text-red-500 line-through mr-2">{q.options[selectedAnswers[i]]}</span>
+                            <span className="text-emerald-600">✓ {q.options[q.correctIndex]}</span>
+                          </span>
+                        )}
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              );
+            })}
+          </div>
+          <div className="flex gap-3">
+            <button onClick={() => { setShowImportConfig(true); setFinished(false); }} className="bg-white border border-gray-200 text-gray-700 font-bold py-3 px-6 rounded-xl shadow-sm">
+              Nhập lại
+            </button>
+            {wrong > 0 && (
+              <button onClick={handleRetryWrong} className="bg-gradient-to-r from-amber-400 to-orange-500 text-white font-bold py-3 px-6 rounded-xl shadow-lg hover:scale-105 transition-all">
+                🔄 Làm lại {wrong} câu sai
+              </button>
+            )}
+            <button onClick={() => { setMode(null); setFinished(false); }} className="bg-white border border-gray-200 text-gray-700 font-bold py-3 px-6 rounded-xl shadow-sm">
+              Đổi mode
+            </button>
+          </div>
+        </div>
+      );
+    }
     const pct = Math.round((score / questions.length) * 100);
     return (
       <div className="min-h-screen flex flex-col items-center justify-center gap-6 p-4">
@@ -683,11 +809,11 @@ function QuizPage() {
     );
   }
 
-  // === Instant quiz in progress ===
+  // === Instant quiz in progress (Kana/Vocabulary/Grammar) ===
   return (
     <div className="min-h-screen flex flex-col items-center justify-center gap-6 p-4 pb-24">
       <div className="w-full max-w-lg flex justify-between text-gray-500 text-sm">
-        <span className="font-medium">{mode === 'Import' ? '📥 Import' : mode}</span>
+        <span className="font-medium">{mode}</span>
         <span>Câu {current + 1}/{questions.length}</span>
         <span className="font-medium text-emerald-500">✓ {score}</span>
       </div>
