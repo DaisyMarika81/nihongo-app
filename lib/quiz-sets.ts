@@ -28,6 +28,17 @@ export async function saveQuizSet(name: string, items: QuizSetItem[]): Promise<Q
   return data as QuizSet;
 }
 
+export async function updateQuizSet(id: string, name: string, items: QuizSetItem[]): Promise<QuizSet> {
+  const { data, error } = await supabase
+    .from('quiz_sets')
+    .update({ name, items })
+    .eq('id', id)
+    .select()
+    .single();
+  if (error) throw error;
+  return data as QuizSet;
+}
+
 export async function deleteQuizSet(id: string): Promise<void> {
   const { error } = await supabase.from('quiz_sets').delete().eq('id', id);
   if (error) throw error;

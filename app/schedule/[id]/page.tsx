@@ -12,6 +12,8 @@ import TaskItem from '@tiptap/extension-task-item';
 import Highlight from '@tiptap/extension-highlight';
 import Placeholder from '@tiptap/extension-placeholder';
 import Underline from '@tiptap/extension-underline';
+import { FontSize } from '@/lib/tiptap-font-size';
+import { CustomParagraph } from '@/lib/tiptap-paragraph';
 import { sessionCards } from '@/data/session-cards';
 import { sessionGrammar } from '@/data/session-grammar';
 import { sessionKanji } from '@/data/session-kanji';
@@ -135,6 +137,7 @@ export default function SessionNotePage() {
   const [showHighlightPicker, setShowHighlightPicker] = useState(false);
   const [showColorPicker, setShowColorPicker] = useState(false);
   const [showTemplatePicker, setShowTemplatePicker] = useState(false);
+  const [fontSize, setFontSize] = useState(16);
   const highlightRef = useRef<HTMLDivElement>(null);
   const colorRef = useRef<HTMLDivElement>(null);
   const templateRef = useRef<HTMLDivElement>(null);
@@ -152,9 +155,12 @@ export default function SessionNotePage() {
     extensions: [
       StarterKit.configure({
         heading: { levels: [1, 2, 3] },
+        paragraph: false,
       }),
+      CustomParagraph,
       TextStyle,
       Color,
+      FontSize,
       TaskList,
       TaskItem.configure({ nested: true }),
       Highlight.configure({ multicolor: true }),
@@ -461,6 +467,29 @@ export default function SessionNotePage() {
                 </div>
               )}
             </div>
+
+            <ToolbarDivider />
+
+            {/* Font size */}
+            <ToolbarBtn onClick={() => {
+              const size = Math.max(10, fontSize - 2);
+              setFontSize(size);
+              editor.chain().focus().setFontSize(`${size}px`).run();
+            }} tooltip="Giảm cỡ chữ" ariaLabel="Giảm cỡ chữ">
+              <span className="text-[13px] font-semibold">A−</span>
+            </ToolbarBtn>
+            <ToolbarBtn onClick={() => {
+              editor.chain().focus().unsetFontSize().run();
+            }} tooltip="Đặt lại cỡ chữ mặc định" ariaLabel="Đặt lại cỡ chữ">
+              <span className="text-[10px] font-semibold text-gray-400">{fontSize}</span>
+            </ToolbarBtn>
+            <ToolbarBtn onClick={() => {
+              const size = Math.min(30, fontSize + 2);
+              setFontSize(size);
+              editor.chain().focus().setFontSize(`${size}px`).run();
+            }} tooltip="Tăng cỡ chữ" ariaLabel="Tăng cỡ chữ">
+              <span className="text-[16px] font-semibold">A+</span>
+            </ToolbarBtn>
 
             <ToolbarDivider />
 

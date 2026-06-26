@@ -3,7 +3,7 @@
 import { useState, useEffect, Suspense } from 'react';
 import { useSearchParams } from 'next/navigation';
 import QuizCard from '../components/QuizCard';
-import { getQuizSets, saveQuizSet, deleteQuizSet, reorderQuizSets, getQuizOrder, type QuizSet } from '../../lib/quiz-sets';
+import { getQuizSets, saveQuizSet, updateQuizSet, deleteQuizSet, reorderQuizSets, getQuizOrder, type QuizSet } from '../../lib/quiz-sets';
 import { useAuth } from '@/lib/auth';
 import { hiragana } from '../../data/hiragana';
 import { katakana } from '../../data/katakana';
@@ -92,6 +92,10 @@ function QuizPage() {
   const [saveStatus, setSaveStatus] = useState<'idle' | 'saving' | 'saved' | 'error'>('idle');
   const [selectedSetIds, setSelectedSetIds] = useState<string[]>([]);
   const [filterLevel, setFilterLevel] = useState<string | null>(null);
+  const [editSetId, setEditSetId] = useState<string | null>(null);
+  const [editJson, setEditJson] = useState('');
+  const [editSetName, setEditSetName] = useState('');
+  const [editSaveStatus, setEditSaveStatus] = useState<'idle' | 'saving' | 'saved' | 'error'>('idle');
 
   function extractLevel(name: string): string | null {
     const match = name.match(/-+\s*(N[1-5])\s*$/i);
@@ -416,13 +420,22 @@ function QuizPage() {
                           <div className="font-medium text-gray-800 text-sm truncate">{s.name}</div>
                           <div className="text-gray-400 text-xs">{s.items.length} từ</div>
                         </div>
-                        {isAdmin && <button
-                          onClick={(e) => { e.stopPropagation(); handleDeleteSet(s.id); }}
-                          className="text-gray-300 hover:text-red-400 transition-colors text-lg leading-none"
-                          aria-label={`Xóa bộ quiz ${s.name}`}
-                        >
-                          ×
-                        </button>}
+                        {isAdmin && <>
+                          <button
+                            onClick={(e) => { e.stopPropagation(); setEditSetId(s.id); setEditJson(JSON.stringify(s.items, null, 2)); setEditSetName(s.name); }}
+                            className="text-gray-300 hover:text-emerald-400 transition-colors text-sm leading-none"
+                            aria-label={`Sửa bộ quiz ${s.name}`}
+                          >
+                            ✏️
+                          </button>
+                          <button
+                            onClick={(e) => { e.stopPropagation(); handleDeleteSet(s.id); }}
+                            className="text-gray-300 hover:text-red-400 transition-colors text-lg leading-none"
+                            aria-label={`Xóa bộ quiz ${s.name}`}
+                          >
+                            ×
+                          </button>
+                        </>}
                       </div>
                     );
                   })}
@@ -434,6 +447,55 @@ function QuizPage() {
                 )}
               </>
             )}
+          </div>
+        )}
+
+        {/* Edit JSON */}
+        {editSetId && (
+          <div className="w-full max-w-lg flex flex-col gap-4 p-4 border-2 border-emerald-200 rounded-xl bg-emerald-50/50">
+            <h3 className="font-bold text-gray-800 text-sm">✏️ Chỉnh sửa bộ quiz</h3>
+            <input
+              value={editSetName}
+              onChange={(e) => setEditSetName(e.target.value)}
+              placeholder="Tên quiz..."
+              className="border border-gray-200 rounded-lg px-3 py-1.5 text-sm focus:outline-none focus:ring-2 focus:ring-emerald-300"
+            />
+            <textarea
+              value={editJson}
+              onChange={(e) => setEditJson(e.target.value)}
+              className="w-full h-48 p-3 font-mono text-sm border border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-emerald-300 resize-y"
+              spellCheck={false}
+            />
+            <div className="flex gap-2 justify-end">
+              <button onClick={() => { setEditSetId(null); setEditSaveStatus('idle'); }}
+                className="px-4 py-2 rounded-xl text-sm font-medium bg-white border border-gray-200 text-gray-600 hover:bg-gray-50 transition-all"
+              >
+                Hủy
+              </button>
+              <button onClick={async () => {
+                try {
+                  const parsed = JSON.parse(editJson);
+                  if (!Array.isArray(parsed)) return alert('JSON phải là một mảng');
+                  for (const item of parsed) {
+                    if (!item.kanji || !item.meaning) return alert('Mỗi mục phải có "kanji" và "meaning"');
+                  }
+                  if (!editSetName.trim()) return alert('Tên quiz không được để trống');
+                  setEditSaveStatus('saving');
+                  const updated = await updateQuizSet(editSetId, editSetName.trim(), parsed);
+                  setSavedSets((prev) => prev.map((s) => s.id === editSetId ? updated : s));
+                  setEditSaveStatus('saved');
+                  setTimeout(() => { setEditSetId(null); setEditSaveStatus('idle'); }, 1000);
+                } catch {
+                  alert('JSON không hợp lệ');
+                  setEditSaveStatus('idle');
+                }
+              }}
+                disabled={editSaveStatus === 'saving'}
+                className={`px-4 py-2 rounded-xl text-sm font-medium transition-all ${editSaveStatus === 'saved' ? 'bg-emerald-100 text-emerald-700' : 'bg-emerald-500 text-white hover:bg-emerald-600'}`}
+              >
+                {editSaveStatus === 'saving' ? '...' : editSaveStatus === 'saved' ? '✓ Đã lưu' : '💾 Lưu'}
+              </button>
+            </div>
           </div>
         )}
 
