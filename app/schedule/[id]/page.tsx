@@ -14,7 +14,10 @@ import Placeholder from '@tiptap/extension-placeholder';
 import Underline from '@tiptap/extension-underline';
 import { FontSize } from '@/lib/tiptap-font-size';
 import { CustomParagraph } from '@/lib/tiptap-paragraph';
+import { JapaneseToken } from '@/lib/tiptap-japanese-token';
 import { loadCloudNote, saveCloudNote } from '@/lib/schedule-notes';
+import { migrateAnnotations } from '@/lib/migrate-jp-tokens';
+import { exportNoteAsPDF } from '@/lib/export-pdf';
 import { sessionCards } from '@/data/session-cards';
 import { sessionGrammar } from '@/data/session-grammar';
 import { sessionKanji } from '@/data/session-kanji';
@@ -140,6 +143,12 @@ export default function SessionNotePage() {
   const [showTemplatePicker, setShowTemplatePicker] = useState(false);
   const [fontSize, setFontSize] = useState(16);
   const [cloudLoaded, setCloudLoaded] = useState(false);
+  const [showJapaneseTokenForm, setShowJapaneseTokenForm] = useState(false);
+  const [jpTokenEditMode, setJpTokenEditMode] = useState(false);
+  const [jpTokenText, setJpTokenText] = useState('');
+  const [jpTokenFurigana, setJpTokenFurigana] = useState('');
+  const [jpTokenMeaning, setJpTokenMeaning] = useState('');
+  const [isJapaneseTokenActive, setIsJapaneseTokenActive] = useState(false);
   const highlightRef = useRef<HTMLDivElement>(null);
   const colorRef = useRef<HTMLDivElement>(null);
   const templateRef = useRef<HTMLDivElement>(null);
@@ -170,6 +179,7 @@ export default function SessionNotePage() {
       Placeholder.configure({
         placeholder: 'Bắt đầu ghi chú cho buổi học này... (💡 Bấm "📋 Mẫu" để chèn template)',
       }),
+      JapaneseToken,
     ],
     content: '',
     onUpdate: ({ editor }) => {
@@ -194,7 +204,7 @@ export default function SessionNotePage() {
     if (!editor || cloudLoaded) return;
     const notes = loadNotes();
     const localContent = notes[id as string] || '';
-    editor.commands.setContent(localContent);
+    editor.commands.setContent(migrateAnnotations(localContent));
 
     // Try cloud note
     loadCloudNote(sessionNum).then((cloudContent) => {
@@ -202,7 +212,7 @@ export default function SessionNotePage() {
         const notes = loadNotes();
         notes[id as string] = cloudContent;
         saveNotes(notes);
-        editor.commands.setContent(cloudContent);
+        editor.commands.setContent(migrateAnnotations(cloudContent));
       }
       setCloudLoaded(true);
     }).catch(() => setCloudLoaded(true));
@@ -217,6 +227,16 @@ export default function SessionNotePage() {
     const text = editor.getText();
     setWordCount(text.trim() ? text.trim().split(/\s+/).length : 0);
   }, [editor, id, sessionNum, cloudLoaded]);
+
+  // Track Japanese token selection
+  useEffect(() => {
+    if (!editor) return;
+    const onUpdate = () => {
+      setIsJapaneseTokenActive(editor.isActive('japaneseToken'));
+    };
+    editor.on('selectionUpdate', onUpdate);
+    return () => { editor.off('selectionUpdate', onUpdate); };
+  }, [editor]);
 
   // Close dropdowns on outside click
   useEffect(() => {
@@ -247,8 +267,8 @@ export default function SessionNotePage() {
   }, [editor]);
 
   const handlePrint = useCallback(() => {
-    window.print();
-  }, []);
+    exportNoteAsPDF(sessionNum);
+  }, [sessionNum]);
 
   const handleExportText = useCallback(() => {
     if (!editor) return;
@@ -262,6 +282,41 @@ export default function SessionNotePage() {
     URL.revokeObjectURL(url);
   }, [editor, id]);
 
+  const insertJapaneseToken = useCallback(() => {
+    if (!editor || !jpTokenText.trim()) return;
+    const attrs = {
+      text: jpTokenText.trim(),
+      furigana: jpTokenFurigana.trim(),
+      meaning: jpTokenMeaning.trim(),
+    };
+    if (jpTokenEditMode) {
+      editor.chain().focus().deleteSelection().insertJapaneseToken(attrs).run();
+    } else {
+      editor.chain().focus().insertJapaneseToken(attrs).run();
+    }
+    setShowJapaneseTokenForm(false);
+    setJpTokenEditMode(false);
+    setJpTokenText('');
+    setJpTokenFurigana('');
+    setJpTokenMeaning('');
+  }, [editor, jpTokenText, jpTokenFurigana, jpTokenMeaning, jpTokenEditMode]);
+
+  const handleOpenJapaneseTokenForm = useCallback(() => {
+    if (editor.isActive('japaneseToken')) {
+      const attrs = editor.getAttributes('japaneseToken');
+      setJpTokenText(attrs.text || '');
+      setJpTokenFurigana(attrs.furigana || '');
+      setJpTokenMeaning(attrs.meaning || '');
+      setJpTokenEditMode(true);
+    } else {
+      setJpTokenText('');
+      setJpTokenFurigana('');
+      setJpTokenMeaning('');
+      setJpTokenEditMode(false);
+    }
+    setShowJapaneseTokenForm(true);
+  }, [editor]);
+
   if (!editor) return null;
 
   return (
@@ -271,12 +326,12 @@ export default function SessionNotePage() {
         <div className="flex items-center justify-between mb-3">
           <button
             onClick={() => router.back()}
-            className="text-sm text-gray-500 hover:text-indigo-500 transition-colors flex items-center gap-1"
+            className="no-print text-sm text-gray-500 hover:text-indigo-500 transition-colors flex items-center gap-1"
           >
             <svg width="16" height="16" viewBox="0 0 16 16" fill="none" aria-hidden="true"><path d="M10 12L6 8l4-4" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/></svg>
             Quay lại
           </button>
-          <div className="flex items-center gap-2">
+          <div className="no-print flex items-center gap-2">
             {saved && (
               <span className="save-indicator text-xs text-emerald-500 flex items-center gap-1">
                 <svg width="14" height="14" viewBox="0 0 14 14" fill="none" aria-hidden="true"><path d="M3 7l3 3 5-5" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/></svg>
@@ -303,7 +358,7 @@ export default function SessionNotePage() {
 
         {/* Quick Links to session resources */}
         {hasAnyContent && (
-          <div className="flex flex-wrap gap-2 mb-4">
+          <div className="no-print flex flex-wrap gap-2 mb-4">
             {hasCards && (
               <Link
                 href={`/schedule/${sessionNum}/flashcard`}
@@ -342,7 +397,7 @@ export default function SessionNotePage() {
       <div className="max-w-2xl mx-auto px-4">
         <div className="bg-white rounded-2xl border border-gray-200 shadow-sm">
           {/* Sticky Toolbar */}
-          <div className="note-toolbar flex flex-wrap items-center gap-0.5 p-2 border-b border-gray-100 bg-white/80">
+          <div className="no-print note-toolbar flex flex-wrap items-center gap-0.5 p-2 border-b border-gray-100 bg-white/80">
             {/* Undo / Redo */}
             <ToolbarBtn onClick={() => editor.chain().focus().undo().run()} tooltip="Hoàn tác (Ctrl+Z)" ariaLabel="Hoàn tác">
               <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true"><polyline points="1 4 1 10 7 10"/><path d="M3.51 15a9 9 0 1 0 2.13-9.36L1 10"/></svg>
@@ -508,6 +563,18 @@ export default function SessionNotePage() {
 
             <ToolbarDivider />
 
+            {/* Japanese Token */}
+            <ToolbarBtn
+              onClick={handleOpenJapaneseTokenForm}
+              active={isJapaneseTokenActive}
+              tooltip={isJapaneseTokenActive ? 'Sửa chú thích tiếng Nhật' : 'Chèn chú thích tiếng Nhật (3 dòng)'}
+              ariaLabel="Chèn/sửa chú thích tiếng Nhật"
+            >
+              <span className="text-[13px] font-bold" style={{ color: '#ef4444' }}>日</span>
+            </ToolbarBtn>
+
+            <ToolbarDivider />
+
             {/* Template & Export */}
             <div className="relative" ref={templateRef}>
               <ToolbarBtn
@@ -529,7 +596,7 @@ export default function SessionNotePage() {
               )}
             </div>
 
-            <ToolbarBtn onClick={handlePrint} tooltip="In / Xuất PDF" ariaLabel="In / Xuất PDF">
+            <ToolbarBtn onClick={handlePrint} tooltip="Xuất PDF" ariaLabel="Xuất PDF">
               <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" aria-hidden="true" strokeLinejoin="round"><polyline points="6 9 6 2 18 2 18 9"/><path d="M6 18H4a2 2 0 0 1-2-2v-5a2 2 0 0 1 2-2h16a2 2 0 0 1 2 2v5a2 2 0 0 1-2 2h-2"/><rect x="6" y="14" width="12" height="8"/></svg>
             </ToolbarBtn>
             <ToolbarBtn onClick={handleExportText} tooltip="Xuất file .txt" ariaLabel="Xuất file .txt">
@@ -547,7 +614,7 @@ export default function SessionNotePage() {
             </div>
 
             {/* Footer with word count & last saved */}
-            <div className="note-footer">
+            <div className="no-print note-footer">
               <span>{wordCount} từ</span>
               <span>
                 {lastSaved ? `💾 ${formatLastSaved(lastSaved)}` : 'Chưa có ghi chú'}
@@ -557,7 +624,7 @@ export default function SessionNotePage() {
         </div>
 
         {/* Navigation between sessions */}
-        <div className="flex items-center justify-between mt-4 text-sm">
+        <div className="no-print flex items-center justify-between mt-4 text-sm">
           {sessionNum > 1 ? (
             <Link
               href={`/schedule/${sessionNum - 1}`}
@@ -578,6 +645,60 @@ export default function SessionNotePage() {
           ) : <div />}
         </div>
       </div>
+
+      {/* Japanese Token Form Dialog */}
+      {showJapaneseTokenForm && (
+        <div className="jp-token-overlay" onClick={() => setShowJapaneseTokenForm(false)}>
+          <div className="jp-token-dialog" onClick={e => e.stopPropagation()}>
+            <h3>🇯🇵 {jpTokenEditMode ? 'Sửa' : 'Thêm'} chú thích tiếng Nhật</h3>
+
+            <div className="space-y-3">
+              <div>
+                <label>Tiếng Nhật (kanji/kana)</label>
+                <input
+                  value={jpTokenText}
+                  onChange={e => setJpTokenText(e.target.value)}
+                  placeholder="例: 人気"
+                  autoFocus
+                />
+              </div>
+              <div>
+                <label>Furigana / Hiragana</label>
+                <input
+                  value={jpTokenFurigana}
+                  onChange={e => setJpTokenFurigana(e.target.value)}
+                  placeholder="例: にんき"
+                />
+              </div>
+              <div>
+                <label>Nghĩa tiếng Việt</label>
+                <input
+                  value={jpTokenMeaning}
+                  onChange={e => setJpTokenMeaning(e.target.value)}
+                  placeholder="例: Được yêu mến"
+                />
+              </div>
+
+              {(jpTokenText || jpTokenFurigana || jpTokenMeaning) && (
+                <div className="text-center pt-2">
+                  <div className="jp-token-preview">
+                    <span className="vn-meaning">{jpTokenMeaning || '…'}</span>
+                    <span className="furigana">{jpTokenFurigana || '…'}</span>
+                    <span className="jp-text">{jpTokenText || '…'}</span>
+                  </div>
+                </div>
+              )}
+            </div>
+
+            <div className="jp-token-dialog-actions">
+              <button className="jp-btn-cancel" onClick={() => setShowJapaneseTokenForm(false)}>Hủy</button>
+              <button className="jp-btn-insert" onClick={insertJapaneseToken} disabled={!jpTokenText.trim()}>
+                {jpTokenEditMode ? 'Lưu' : 'Chèn'}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }

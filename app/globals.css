@@ -91,7 +91,160 @@ body {
 
 ruby rt { font-size: 0.6em; color: #818cf8; }
 
+/* ===== Japanese Token ===== */
+.jp-token {
+  display: inline-grid;
+  grid-template-rows: auto auto auto;
+  justify-items: center;
+  align-items: end;
+  vertical-align: bottom;
+  margin: 0 4px;
+  white-space: nowrap;
+  row-gap: 5px;
+}
+
+.jp-token .vn-meaning {
+  color: #ef4444;
+  font-size: 12px;
+  font-weight: 700;
+  line-height: 1.2;
+}
+
+.jp-token .furigana {
+  font-size: 12px;
+  line-height: 1.2;
+  color: inherit;
+}
+
+.jp-token .jp-text {
+  font-size: inherit;
+  line-height: inherit;
+}
+
+[data-theme="dark"] .jp-token .vn-meaning {
+  color: #f87171;
+}
+
+.ProseMirror .jp-token.ProseMirror-selectednode {
+  outline: 2px solid #6C63FF;
+  outline-offset: 2px;
+  border-radius: 4px;
+}
+
+/* ===== Japanese Token Form ===== */
+.jp-token-overlay {
+  position: fixed;
+  inset: 0;
+  z-index: 50;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: rgba(0, 0, 0, 0.3);
+  backdrop-filter: blur(4px);
+}
+.jp-token-dialog {
+  background: #fff;
+  border-radius: 1rem;
+  padding: 1.25rem;
+  width: 90%;
+  max-width: 360px;
+  box-shadow: 0 20px 60px rgba(0,0,0,0.15);
+}
+.jp-token-dialog h3 {
+  font-size: 1.125rem;
+  font-weight: 700;
+  margin-bottom: 1rem;
+  color: #1f2937;
+}
+.jp-token-dialog label {
+  display: block;
+  font-size: 0.8125rem;
+  font-weight: 600;
+  color: #374151;
+  margin-bottom: 0.25rem;
+}
+.jp-token-dialog input {
+  width: 100%;
+  padding: 0.5rem 0.75rem;
+  border: 1px solid #e5e7eb;
+  border-radius: 0.5rem;
+  font-size: 0.9375rem;
+  outline: none;
+  transition: border-color 0.15s;
+  box-sizing: border-box;
+}
+.jp-token-dialog input:focus {
+  border-color: #6C63FF;
+  box-shadow: 0 0 0 2px rgba(108,99,255,0.15);
+}
+.jp-token-dialog .jp-token-preview {
+  display: inline-grid;
+  grid-template-rows: auto auto auto;
+  justify-items: center;
+  margin: 0 auto;
+}
+.jp-token-dialog-actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: 0.5rem;
+  margin-top: 1rem;
+}
+.jp-token-dialog-actions button {
+  padding: 0.5rem 1rem;
+  border-radius: 0.5rem;
+  font-size: 0.8125rem;
+  font-weight: 600;
+  cursor: pointer;
+  border: none;
+  transition: all 0.15s;
+}
+.jp-token-dialog-actions .jp-btn-cancel {
+  background: #f3f4f6;
+  color: #6b7280;
+}
+.jp-token-dialog-actions .jp-btn-cancel:hover {
+  background: #e5e7eb;
+}
+.jp-token-dialog-actions .jp-btn-insert {
+  background: #6C63FF;
+  color: #fff;
+}
+.jp-token-dialog-actions .jp-btn-insert:hover {
+  background: #5b52e0;
+}
+.jp-token-dialog-actions .jp-btn-insert:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+[data-theme="dark"] .jp-token-dialog {
+  background: #1f2937;
+}
+[data-theme="dark"] .jp-token-dialog h3 {
+  color: #f1f5f9;
+}
+[data-theme="dark"] .jp-token-dialog label {
+  color: #cbd5e1;
+}
+[data-theme="dark"] .jp-token-dialog input {
+  background: #111827;
+  border-color: #374151;
+  color: #f8fafc;
+}
+[data-theme="dark"] .jp-token-dialog input:focus {
+  border-color: #8B7CFF;
+  box-shadow: 0 0 0 2px rgba(108,99,255,0.25);
+}
+[data-theme="dark"] .jp-token-dialog-actions .jp-btn-cancel {
+  background: #374151;
+  color: #94a3b8;
+}
+[data-theme="dark"] .jp-token-dialog-actions .jp-btn-cancel:hover {
+  background: #4b5563;
+}
+
 /* Responsive */
+
 @media (min-width: 768px) {
   body { font-size: 18px; }
   .text-xs { font-size: 0.8125rem !important; }
@@ -344,3 +497,116 @@ ul[data-type="taskList"] li[data-checked="true"] > div > p {
 [data-theme="dark"] .note-toolbar-btn.active { background: rgba(108, 99, 255, 0.2); color: #a5b4fc; }
 [data-theme="dark"] .note-toolbar-btn[data-tooltip]::after { background: #374151; }
 [data-theme="dark"] .note-footer { border-top-color: rgba(255, 255, 255, 0.06); color: #64748b; }
+
+/* ===== Print Styles (PDF Export) ===== */
+@media print {
+  @page {
+    margin: 1.5cm;
+    size: A4;
+  }
+
+  body {
+    background: white !important;
+    color: #000 !important;
+    overflow: visible !important;
+  }
+
+  nav,
+  .jp-token-overlay,
+  .no-print {
+    display: none !important;
+  }
+
+  .print-only {
+    display: block !important;
+  }
+
+  /* Match screen width exactly to avoid layout shift */
+  [class*="max-w-2xl"]{
+    width:100% !important;
+    max-width:none !important;
+    min-width:unset !important;
+  }
+
+  .ProseMirror {
+    outline: none !important;
+    min-height: auto !important;
+    padding: 0 !important;
+    overflow: visible !important;
+  }
+
+  .ProseMirror p {
+    margin: 0.3em 0 !important;
+    line-height: 1.6 !important;
+    color: #000 !important;
+  }
+
+  .ProseMirror h1, .ProseMirror h2, .ProseMirror h3 {
+    color: #000 !important;
+    page-break-after: avoid;
+  }
+
+  .ProseMirror blockquote {
+    border-left-color: #8b5cf6 !important;
+    color: #333 !important;
+    background: #f8f8ff !important;
+  }
+
+  .ProseMirror pre {
+    background: #f5f5f5 !important;
+    color: #000 !important;
+    border: 1px solid #ddd !important;
+    break-inside: avoid;
+  }
+
+  .ProseMirror code {
+    background: #f0f0f0 !important;
+    color: #333 !important;
+  }
+
+  .ProseMirror ul[data-type="taskList"] li[data-checked="true"] > div > p {
+    color: #999 !important;
+  }
+
+  .jp-token {
+    display: inline-grid !important;
+    grid-template-rows: auto auto auto !important;
+    justify-items: center !important;
+    align-items: end !important;
+    vertical-align: bottom !important;
+    margin: 0 4px !important;
+    white-space: nowrap !important;
+    row-gap: 3px !important;
+  }
+
+  .jp-token .vn-meaning {
+    color: #ef4444 !important;
+    font-size: 10pt !important;
+    font-weight: 600 !important;
+    line-height: 1.2 !important;
+  }
+
+  .jp-token .furigana {
+    font-size: 10pt !important;
+    line-height: 1.2 !important;
+    color: #000 !important;
+  }
+
+  .jp-token .jp-text {
+    font-size: inherit !important;
+    line-height: inherit !important;
+  }
+
+  img, svg {
+    max-width: 100% !important;
+    page-break-inside: avoid;
+  }
+
+  table, pre, blockquote {
+    break-inside: avoid;
+  }
+
+  h1, h2, h3, h4 {
+    page-break-after: avoid;
+  }
+}
