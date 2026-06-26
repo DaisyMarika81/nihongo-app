@@ -21,15 +21,18 @@ export type GrammarDetails = {
 };
 
 // Helper: extract plain-text example from string | GrammarExample
-export function getExampleText(ex: string | GrammarExample): string {
+export function getExampleText(ex: string | GrammarExample | null | undefined): string {
+  if (ex == null) return '';
   return typeof ex === 'string' ? ex : ex.japanese || '';
 }
 
-export function getExampleRomaji(ex: string | GrammarExample, fallback = ''): string {
+export function getExampleRomaji(ex: string | GrammarExample | null | undefined, fallback = ''): string {
+  if (ex == null) return '';
   return typeof ex === 'string' ? fallback : ex.romaji || '';
 }
 
-export function getExampleMeaning(ex: string | GrammarExample, fallback = ''): string {
+export function getExampleMeaning(ex: string | GrammarExample | null | undefined, fallback = ''): string {
+  if (ex == null) return '';
   return typeof ex === 'string' ? fallback : ex.vietnamese || '';
 }
 

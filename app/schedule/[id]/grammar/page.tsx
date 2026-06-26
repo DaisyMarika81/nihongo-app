@@ -312,7 +312,7 @@ export default function SessionGrammarPage() {
                           const exPattern = u.pattern || g.pattern;
                           return (
                             <div className="space-y-1.5">
-                              <div className="flex items-start gap-2">
+                              <div className="flex items-center gap-2">
                                 <button onClick={() => speak(exText)} className="text-sm mt-0.5 shrink-0" aria-label="Phát âm">🔊</button>
                                 <span className="text-base font-semibold leading-relaxed break-words" style={{ color: '#333' }}
                                   dangerouslySetInnerHTML={{ __html: highlightExample(exText, exPattern) }} />
@@ -329,13 +329,25 @@ export default function SessionGrammarPage() {
                         {u.note && <div className="text-sm" style={{ color: '#777' }}>💡 {u.note}</div>}
                       </div>
                     ))}
+                    {/* Show top-level example after usages */}
+                    {g.example && (
+                      <div className="bg-gray-50 rounded-xl p-4 border border-gray-100 space-y-2">
+                        <div className="flex items-center gap-2">
+                          <button onClick={() => speak(getExampleText(g.example))} className="text-sm mt-0.5 shrink-0" aria-label="Phát âm">🔊</button>
+                          <span className="text-md font-semibold leading-relaxed break-words" style={{ color: '#333' }}
+                            dangerouslySetInnerHTML={{ __html: highlightExample(getExampleText(g.example), g.pattern) }} />
+                        </div>
+                        <div className="text-sm italic" style={{ color: '#666' }}>{getExampleRomaji(g.example, g.exampleRomaji)}</div>
+                        <div className="text-[15px]" style={{ color: '#555' }}>{getExampleMeaning(g.example, g.exampleMeaning)}</div>
+                      </div>
+                    )}
                   </div>
-                ) : (
+                ) : g.example ? (
                   <div className="bg-gray-50 rounded-xl p-4 border border-gray-100 space-y-2">
-                    <div className="flex items-start gap-2">
+                    <div className="flex items-center gap-2">
                       <button onClick={() => speak(getExampleText(g.example))} className="text-sm mt-0.5 shrink-0" aria-label="Phát âm">🔊</button>
                       <span
-                        className="text-lg font-semibold leading-relaxed break-words"
+                        className="text-md font-semibold leading-relaxed break-words"
                         style={{ color: '#333' }}
                         dangerouslySetInnerHTML={{ __html: highlightExample(getExampleText(g.example), g.pattern) }}
                       />
@@ -343,6 +355,8 @@ export default function SessionGrammarPage() {
                     <div className="text-sm italic" style={{ color: '#666' }}>{getExampleRomaji(g.example, g.exampleRomaji)}</div>
                     <div className="text-[15px]" style={{ color: '#555' }}>{getExampleMeaning(g.example, g.exampleMeaning)}</div>
                   </div>
+                ) : (
+                  <div className="text-sm text-gray-400 italic">Chưa có ví dụ</div>
                 )}
               </div>
             )}
