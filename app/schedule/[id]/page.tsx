@@ -14,6 +14,7 @@ import Placeholder from '@tiptap/extension-placeholder';
 import Underline from '@tiptap/extension-underline';
 import { FontSize } from '@/lib/tiptap-font-size';
 import { CustomParagraph } from '@/lib/tiptap-paragraph';
+import { loadCloudNote, saveCloudNote } from '@/lib/schedule-notes';
 import { sessionCards } from '@/data/session-cards';
 import { sessionGrammar } from '@/data/session-grammar';
 import { sessionKanji } from '@/data/session-kanji';
@@ -138,6 +139,7 @@ export default function SessionNotePage() {
   const [showColorPicker, setShowColorPicker] = useState(false);
   const [showTemplatePicker, setShowTemplatePicker] = useState(false);
   const [fontSize, setFontSize] = useState(16);
+  const [cloudLoaded, setCloudLoaded] = useState(false);
   const highlightRef = useRef<HTMLDivElement>(null);
   const colorRef = useRef<HTMLDivElement>(null);
   const templateRef = useRef<HTMLDivElement>(null);
@@ -171,10 +173,12 @@ export default function SessionNotePage() {
     ],
     content: '',
     onUpdate: ({ editor }) => {
+      const html = editor.getHTML();
       const notes = loadNotes();
-      notes[id as string] = editor.getHTML();
+      notes[id as string] = html;
       saveNotes(notes);
       saveMeta(id as string);
+      saveCloudNote(sessionNum, html);
       setSaved(true);
       setLastSaved(new Date().toISOString());
       setTimeout(() => setSaved(false), 1500);
@@ -187,10 +191,21 @@ export default function SessionNotePage() {
   });
 
   useEffect(() => {
-    if (!editor) return;
+    if (!editor || cloudLoaded) return;
     const notes = loadNotes();
-    const content = notes[id as string] || '';
-    editor.commands.setContent(content);
+    const localContent = notes[id as string] || '';
+    editor.commands.setContent(localContent);
+
+    // Try cloud note
+    loadCloudNote(sessionNum).then((cloudContent) => {
+      if (cloudContent && cloudContent !== localContent) {
+        const notes = loadNotes();
+        notes[id as string] = cloudContent;
+        saveNotes(notes);
+        editor.commands.setContent(cloudContent);
+      }
+      setCloudLoaded(true);
+    }).catch(() => setCloudLoaded(true));
 
     // Load meta
     const meta = loadMeta();
@@ -201,7 +216,7 @@ export default function SessionNotePage() {
     // Initial word count
     const text = editor.getText();
     setWordCount(text.trim() ? text.trim().split(/\s+/).length : 0);
-  }, [editor, id]);
+  }, [editor, id, sessionNum, cloudLoaded]);
 
   // Close dropdowns on outside click
   useEffect(() => {
