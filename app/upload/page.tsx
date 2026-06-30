@@ -33,6 +33,7 @@ const TEMPLATES: Record<SessionDataType, string> = {
         "pattern": "",
         "example": "",
         "exampleMeaning": "",
+        "exampleHiragana": "",
         "note": ""
       }
     ]
@@ -102,6 +103,7 @@ const EXAMPLES: Record<SessionDataType, string> = {
     "example": {
       "japanese": "毎日、寝る前に、リキアプリでのビデオを見ることにしている。",
       "romaji": "Mainichi, neru mae ni, riki apuri de no bideo wo miru koto ni shite iru.",
+      "hiragana": "まいにち、ねるまえに、りきあぷりでのびでおをみることにしている。",
       "vietnamese": "Mỗi ngày, trước khi ngủ, tôi đều xem video trên Riki."
     },
     "usages": [
@@ -111,6 +113,7 @@ const EXAMPLES: Record<SessionDataType, string> = {
         "pattern": "V-る + ことにしている",
         "example": "毎日、ジョギングをすることにしている。",
         "exampleMeaning": "Tôi đặt quyết tâm chạy bộ mỗi ngày.",
+        "exampleHiragana": "なつにゆきがふるはずがない",
         "note": "Thường dùng với động từ chỉ hành động có chủ đích"
       },
       {
@@ -119,6 +122,7 @@ const EXAMPLES: Record<SessionDataType, string> = {
         "pattern": "V-ない + ことにしている",
         "example": "夜遅く、コーヒーを飲まないことにしている。",
         "exampleMeaning": "Tôi không uống cà phê vào tối muộn.",
+        "exampleHiragana": "なつにゆきがふるはずがない",
         "note": "Dạng phủ định của thói quen"
       }
     ]

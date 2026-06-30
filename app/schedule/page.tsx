@@ -80,9 +80,14 @@ export default function SchedulePage() {
           </div>
         </div>
 
-        <Link href="/schedule/quiz" className="block w-full py-3 mb-4 text-center bg-gradient-to-r from-amber-400 to-orange-500 text-white rounded-xl font-medium shadow hover:shadow-md transition-all">
-          ✍️ Trắc nghiệm tổng hợp
-        </Link>
+        <div className="flex gap-2 mb-4">
+          <Link href="/schedule/quiz" className="flex-1 py-3 text-center bg-gradient-to-r from-amber-400 to-orange-500 text-white rounded-xl font-medium shadow hover:shadow-md transition-all text-sm">
+            ✍️ Trắc nghiệm tổng hợp
+          </Link>
+          <Link href="/schedule/grammar-summary" className="flex-1 py-3 text-center bg-gradient-to-r from-indigo-500 to-violet-500 text-white rounded-xl font-medium shadow hover:shadow-md transition-all text-sm">
+            📐 Tổng hợp ngữ pháp
+          </Link>
+        </div>
 
         <div className="space-y-2.5">
           {schedule.map((s) => {

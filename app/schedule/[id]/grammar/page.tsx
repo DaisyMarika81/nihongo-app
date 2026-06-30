@@ -3,7 +3,7 @@
 import { useState, useEffect } from 'react';
 import { useParams } from 'next/navigation';
 import { useAuth } from '@/lib/auth';
-import { sessionGrammar, SessionGrammar, GrammarUsage, GrammarExample, getExampleText, getExampleRomaji, getExampleMeaning } from '@/data/session-grammar';
+import { sessionGrammar, SessionGrammar, GrammarUsage, GrammarExample, getExampleText, getExampleRomaji, getExampleHiragana, getExampleMeaning } from '@/data/session-grammar';
 import Link from 'next/link';
 import { speak } from '@/lib/speak';
 import { getSessionData, deleteSessionItem } from '@/lib/session-data';
@@ -310,18 +310,24 @@ export default function SessionGrammarPage() {
                           const ex = u.example as string | GrammarExample;
                           const exText = getExampleText(ex);
                           const exPattern = u.pattern || g.pattern;
+                          const exHiragana = u.exampleHiragana || getExampleHiragana(ex);
+                          const exRomaji = u.exampleRomaji || getExampleRomaji(ex);
+                          const exMeaning = u.exampleMeaning || getExampleMeaning(ex);
                           return (
                             <div className="space-y-1.5">
-                              <div className="flex items-center gap-2">
+                              <div className="flex items-start gap-2">
                                 <button onClick={() => speak(exText)} className="text-sm mt-0.5 shrink-0" aria-label="Phát âm">🔊</button>
                                 <span className="text-base font-semibold leading-relaxed break-words" style={{ color: '#333' }}
                                   dangerouslySetInnerHTML={{ __html: highlightExample(exText, exPattern) }} />
                               </div>
-                              {(u.exampleRomaji || getExampleRomaji(ex)) && (
-                                <div className="text-sm italic" style={{ color: '#666' }}>{u.exampleRomaji || getExampleRomaji(ex)}</div>
+                              {exHiragana && (
+                                <div className="text-sm" style={{ color: '#555' }}>{exHiragana}</div>
                               )}
-                              {(u.exampleMeaning || getExampleMeaning(ex)) && (
-                                <div className="text-[15px]" style={{ color: '#555' }}>{u.exampleMeaning || getExampleMeaning(ex)}</div>
+                              {exRomaji && (
+                                <div className="text-sm italic" style={{ color: '#666' }}>{exRomaji}</div>
+                              )}
+                              {exMeaning && (
+                                <div className="text-[15px]" style={{ color: '#555' }}>{exMeaning}</div>
                               )}
                             </div>
                           );
@@ -337,7 +343,11 @@ export default function SessionGrammarPage() {
                           <span className="text-md font-semibold leading-relaxed break-words" style={{ color: '#333' }}
                             dangerouslySetInnerHTML={{ __html: highlightExample(getExampleText(g.example), g.pattern) }} />
                         </div>
+                        {(g.exampleHiragana || getExampleHiragana(g.example)) && (
+                          <div className="text-sm" style={{ color: '#555' }}>{g.exampleHiragana || getExampleHiragana(g.example)}</div>
+                        )}
                         <div className="text-sm italic" style={{ color: '#666' }}>{getExampleRomaji(g.example, g.exampleRomaji)}</div>
+                        <div className="text-sm italic" style={{ color: '#666' }}>{getExampleHiragana(g.example, g.exampleHiragana)}</div>
                         <div className="text-[15px]" style={{ color: '#555' }}>{getExampleMeaning(g.example, g.exampleMeaning)}</div>
                       </div>
                     )}
@@ -352,6 +362,10 @@ export default function SessionGrammarPage() {
                         dangerouslySetInnerHTML={{ __html: highlightExample(getExampleText(g.example), g.pattern) }}
                       />
                     </div>
+                    {(g.exampleHiragana || getExampleHiragana(g.example)) && (
+                      <div className="text-sm" style={{ color: '#555' }}>{g.exampleHiragana || getExampleHiragana(g.example)}</div>
+                    )}
+                    <div className="text-sm italic" style={{ color: '#666' }}>{getExampleHiragana(g.example, g.exampleHiragana)}</div>
                     <div className="text-sm italic" style={{ color: '#666' }}>{getExampleRomaji(g.example, g.exampleRomaji)}</div>
                     <div className="text-[15px]" style={{ color: '#555' }}>{getExampleMeaning(g.example, g.exampleMeaning)}</div>
                   </div>

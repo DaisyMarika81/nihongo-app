@@ -6,6 +6,7 @@ export type Connection = {
 export type GrammarExample = {
   japanese: string;
   romaji?: string;
+  hiragana?: string;
   vietnamese?: string;
 };
 
@@ -31,6 +32,11 @@ export function getExampleRomaji(ex: string | GrammarExample | null | undefined,
   return typeof ex === 'string' ? fallback : ex.romaji || '';
 }
 
+export function getExampleHiragana(ex: string | GrammarExample | null | undefined, fallback = ''): string {
+  if (ex == null) return '';
+  return typeof ex === 'string' ? fallback : ex.hiragana || '';
+}
+
 export function getExampleMeaning(ex: string | GrammarExample | null | undefined, fallback = ''): string {
   if (ex == null) return '';
   return typeof ex === 'string' ? fallback : ex.vietnamese || '';
@@ -43,6 +49,7 @@ export type GrammarUsage = {
   example?: string | GrammarExample;
   exampleMeaning?: string;
   exampleRomaji?: string;
+  exampleHiragana?: string;
   note?: string;
 };
 
@@ -54,6 +61,7 @@ export type SessionGrammar = {
   details?: GrammarDetails;
   example: string | GrammarExample;
   exampleRomaji?: string;
+  exampleHiragana?: string;
   exampleMeaning?: string;
   note?: string;
   jlpt?: string;
