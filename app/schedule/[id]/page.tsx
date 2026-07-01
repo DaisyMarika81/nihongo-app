@@ -309,7 +309,9 @@ export default function SessionNotePage() {
       setJpTokenMeaning(attrs.meaning || '');
       setJpTokenEditMode(true);
     } else {
-      setJpTokenText('');
+      const { from, to } = editor.state.selection;
+      const selectedText = from !== to ? editor.state.doc.textBetween(from, to, '') : '';
+      setJpTokenText(selectedText);
       setJpTokenFurigana('');
       setJpTokenMeaning('');
       setJpTokenEditMode(false);
@@ -648,11 +650,19 @@ export default function SessionNotePage() {
 
       {/* Japanese Token Form Dialog */}
       {showJapaneseTokenForm && (
-        <div className="jp-token-overlay" onClick={() => setShowJapaneseTokenForm(false)}>
-          <div className="jp-token-dialog" onClick={e => e.stopPropagation()}>
+        <div className="jp-token-overlay" onMouseDown={e => { if (e.target === e.currentTarget) setShowJapaneseTokenForm(false); }}>
+          <div className="jp-token-dialog" onMouseDown={e => e.stopPropagation()}>
             <h3>🇯🇵 {jpTokenEditMode ? 'Sửa' : 'Thêm'} chú thích tiếng Nhật</h3>
 
-            <div className="space-y-3">
+            <div
+              className="space-y-3"
+              onKeyDown={e => {
+                if (e.key === 'Enter' && jpTokenText.trim()) {
+                  e.preventDefault();
+                  insertJapaneseToken();
+                }
+              }}
+            >
               <div>
                 <label>Tiếng Nhật (kanji/kana)</label>
                 <input
