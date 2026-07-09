@@ -7,7 +7,7 @@ const practices = [
   { href: '/practice/listen', icon: '👂', title: 'Nghe & Chọn', desc: 'Luyện nghe phát âm' },
   { href: '/practice/sentence', icon: '🧩', title: 'Ghép câu', desc: 'Sắp xếp từ thành câu' },
   { href: '/practice/conjugation', icon: '🔄', title: 'Chia động từ', desc: 'ます→て→ない→た' },
-  { href: '/review/jlpt', icon: '📝', title: 'JLPT Kanji Quiz', desc: '問題2 & 問題3 (35 câu)' },
+  { href: '/review/jlpt', icon: '📝', title: 'JLPT Kanji Quiz', desc: '問題2 & 問題3 (読み・表記)' },
   { href: '/bookmarks', icon: '⭐', title: 'Từ khó', desc: 'Ôn từ đã đánh dấu' },
 ];
 

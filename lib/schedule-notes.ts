@@ -24,3 +24,12 @@ export async function saveCloudNote(sessionNum: number, content: string): Promis
       { onConflict: 'session_num' },
     );
 }
+
+/** Sessions that have non-empty cloud notes (for schedule list badges). */
+export async function listSessionsWithNotes(): Promise<number[]> {
+  const { data, error } = await supabase.from('schedule_notes').select('session_num, content');
+  if (error || !data) return [];
+  return data
+    .filter((row) => typeof row.content === 'string' && row.content.replace(/<[^>]*>/g, '').trim().length > 0)
+    .map((row) => row.session_num as number);
+}

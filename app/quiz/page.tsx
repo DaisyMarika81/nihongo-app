@@ -57,14 +57,37 @@ function generateQuestions(mode: QuizMode, count = 10): Question[] {
 }
 
 function generateImportQuestions(items: ImportItem[], count: number): Question[] {
-  const pool = shuffle(items);
-  return pool.slice(0, count).map((item) => {
-    const others = pool.filter((i) => i.meaning !== item.meaning);
-    const wrong = shuffle(others).slice(0, 3).map((i) => i.meaning);
-    while (wrong.length < 3) wrong.push('—');
+  const pool = shuffle(items.filter((i) => i.kanji?.trim() && i.meaning?.trim()));
+  if (pool.length === 0) return [];
+  const take = Math.min(count, pool.length);
+  return pool.slice(0, take).map((item) => {
+    const wrongSet = new Set<string>();
+    for (const other of shuffle(pool)) {
+      if (other.meaning === item.meaning || other.kanji === item.kanji) continue;
+      wrongSet.add(other.meaning);
+      if (wrongSet.size >= 3) break;
+    }
+    const wrong = [...wrongSet];
     const options = shuffle([item.meaning, ...wrong]);
     return { question: item.kanji, options, correctIndex: options.indexOf(item.meaning) };
   });
+}
+
+/** Merge selected sets, dedupe by kanji (first wins) */
+function mergeQuizItems(sets: QuizSet[], selectedIds: string[]): ImportItem[] {
+  const merged: ImportItem[] = [];
+  const seen = new Set<string>();
+  for (const s of sets) {
+    if (!selectedIds.includes(s.id)) continue;
+    for (const item of s.items || []) {
+      const key = (item.kanji || '').trim();
+      if (!key || seen.has(key)) continue;
+      if (!item.meaning?.trim()) continue;
+      seen.add(key);
+      merged.push({ kanji: key, meaning: item.meaning.trim() });
+    }
+  }
+  return merged;
 }
 
 export default function QuizPageWrapper() {
@@ -96,6 +119,7 @@ function QuizPage() {
   const [editJson, setEditJson] = useState('');
   const [editSetName, setEditSetName] = useState('');
   const [editSaveStatus, setEditSaveStatus] = useState<'idle' | 'saving' | 'saved' | 'error'>('idle');
+  const [setSearch, setSetSearch] = useState('');
 
   function extractLevel(name: string): string | null {
     const match = name.match(/-+\s*(N[1-5])\s*$/i);
@@ -111,9 +135,19 @@ function QuizPage() {
     return [...map.entries()].sort(([a], [b]) => a.localeCompare(b));
   })();
 
-  const filteredSets = filterLevel
-    ? savedSets.filter((s) => extractLevel(s.name) === filterLevel)
-    : savedSets;
+  const filteredSets = savedSets.filter((s) => {
+    if (filterLevel && extractLevel(s.name) !== filterLevel) return false;
+    if (setSearch.trim()) {
+      const q = setSearch.trim().toLowerCase();
+      if (!s.name.toLowerCase().includes(q)) return false;
+    }
+    return true;
+  });
+
+  const filteredIds = filteredSets.map((s) => s.id);
+  const allFilteredSelected =
+    filteredIds.length > 0 && filteredIds.every((id) => selectedSetIds.includes(id));
+  const someFilteredSelected = filteredIds.some((id) => selectedSetIds.includes(id));
 
   const parsedImport = (() => {
     if (!importJson.trim()) return null;
@@ -178,17 +212,22 @@ function QuizPage() {
     setSelectedSetIds((prev) => prev.filter((sid) => sid !== id));
   }
 
-  function startFromSavedSets() {
-    const merged: ImportItem[] = [];
-    for (const s of savedSets) {
-      if (selectedSetIds.includes(s.id)) {
-        for (const item of s.items) {
-          if (!merged.find((m) => m.kanji === item.kanji)) merged.push(item);
-        }
-      }
+  function toggleSelectAllFiltered() {
+    if (filteredIds.length === 0) return;
+    if (allFilteredSelected) {
+      // Bỏ chọn các set đang hiện (filter/search)
+      setSelectedSetIds((prev) => prev.filter((id) => !filteredIds.includes(id)));
+    } else {
+      // Chọn tất cả set đang hiện (giữ selection ngoài filter)
+      setSelectedSetIds((prev) => [...new Set([...prev, ...filteredIds])]);
     }
+  }
+
+  function startFromSavedSets() {
+    const merged = mergeQuizItems(savedSets, selectedSetIds);
     if (merged.length === 0) return;
     const qs = generateImportQuestions(merged, Math.min(questionCount, merged.length));
+    if (qs.length === 0) return;
     setQuestions(qs);
     setCurrent(0);
     setScore(0);
@@ -302,15 +341,17 @@ function QuizPage() {
   if (showImportConfig) {
     const importItems = parsedImport && 'items' in parsedImport ? parsedImport.items : null;
     const importError = parsedImport && 'error' in parsedImport ? parsedImport.error : null;
-    const mergedCount = selectedSetIds.reduce((sum, id) => {
-      const s = savedSets.find((x) => x.id === id);
-      return sum + (s ? s.items.length : 0);
-    }, 0);
+    const mergedItems = mergeQuizItems(savedSets, selectedSetIds);
+    const uniqueCount = mergedItems.length;
     const isReadyPaste = importItems !== null;
-    const isReadySaved = selectedSetIds.length > 0;
+    const isReadySaved = selectedSetIds.length > 0 && uniqueCount > 0;
+    const poolSize =
+      importTab === 'paste' && importItems
+        ? importItems.length
+        : uniqueCount || 1;
 
     return (
-      <div className="min-h-screen flex flex-col items-center justify-center gap-6 p-4">
+      <div className="min-h-screen flex flex-col items-center justify-center gap-6 p-4 pb-24">
         <h1 className="text-3xl font-bold text-gray-800">✍️ Trắc nghiệm Kanji</h1>
 
         {/* Tabs */}
@@ -342,7 +383,7 @@ function QuizPage() {
             {importError && <p className="text-red-500 text-sm">⚠ {importError}</p>}
             {importItems && (
               <div className="flex flex-col gap-2">
-                <div className="flex items-center gap-2">
+                <div className="flex items-center gap-2 flex-wrap">
                   <p className="text-emerald-600 text-sm flex-1">✓ {importItems.length} mục hợp lệ</p>
                   {/* Save to Supabase */}
                   <input
@@ -399,20 +440,48 @@ function QuizPage() {
                     ))}
                   </div>
                 )}
+
+                {/* Search + Chọn tất cả */}
+                <div className="flex items-center gap-2">
+                  <input
+                    value={setSearch}
+                    onChange={(e) => setSetSearch(e.target.value)}
+                    placeholder="Tìm theo tên…"
+                    className="flex-1 border border-gray-200 rounded-lg px-3 py-1.5 text-sm focus:outline-none focus:ring-2 focus:ring-emerald-300"
+                  />
+                  <button
+                    type="button"
+                    onClick={toggleSelectAllFiltered}
+                    disabled={filteredIds.length === 0}
+                    className={`shrink-0 px-3 py-1.5 rounded-lg text-xs font-semibold transition-all disabled:opacity-40 ${
+                      allFilteredSelected
+                        ? 'bg-amber-100 text-amber-800 border border-amber-200 hover:bg-amber-200'
+                        : 'bg-indigo-500 text-white shadow-sm hover:bg-indigo-600'
+                    }`}
+                  >
+                    {allFilteredSelected
+                      ? `Bỏ chọn${filterLevel ? ` ${filterLevel}` : ''}`
+                      : `Chọn tất cả${filterLevel ? ` ${filterLevel}` : ''}${filteredIds.length ? ` (${filteredIds.length})` : ''}`}
+                  </button>
+                </div>
+
                 <div className="flex flex-col gap-2 max-h-60 overflow-y-auto">
-                  {filteredSets.map((s, idx) => {
+                  {filteredSets.length === 0 ? (
+                    <p className="text-gray-400 text-sm text-center py-6">Không có quiz khớp bộ lọc</p>
+                  ) : (
+                    filteredSets.map((s) => {
                     const isSelected = selectedSetIds.includes(s.id);
                     return (
                       <div
                         key={s.id}
-                        draggable={isAdmin && !filterLevel}
+                        draggable={isAdmin && !filterLevel && !setSearch}
                         onDragStart={(e) => { const realIdx = savedSets.findIndex((x) => x.id === s.id); e.dataTransfer.setData('text/plain', String(realIdx)); }}
                         onDragOver={(e) => { e.preventDefault(); }}
-                        onDrop={(e) => { e.preventDefault(); const from = parseInt(e.dataTransfer.getData('text/plain')); const to = savedSets.findIndex((x) => x.id === s.id); if (from === to) return; const arr = [...savedSets]; const [item] = arr.splice(from, 1); const toIdx = savedSets.findIndex((x) => x.id === s.id); arr.splice(toIdx, 0, item); setSavedSets(arr); reorderQuizSets(arr.map(x => x.id)); }}
+                        onDrop={(e) => { e.preventDefault(); const from = parseInt(e.dataTransfer.getData('text/plain')); const to = savedSets.findIndex((x) => x.id === s.id); if (from === to || Number.isNaN(from)) return; const arr = [...savedSets]; const [item] = arr.splice(from, 1); const toIdx = arr.findIndex((x) => x.id === s.id); arr.splice(toIdx === -1 ? arr.length : toIdx, 0, item); setSavedSets(arr); reorderQuizSets(arr.map(x => x.id)); }}
                         className={`flex items-center gap-3 p-3 rounded-xl border-2 cursor-pointer transition-all ${isSelected ? 'border-emerald-400 bg-emerald-50' : 'border-gray-200 bg-white hover:border-gray-300'}`}
                         onClick={() => setSelectedSetIds((prev) => isSelected ? prev.filter((id) => id !== s.id) : [...prev, s.id])}
                       >
-                        {isAdmin && !filterLevel && <span className="text-gray-300 cursor-grab active:cursor-grabbing text-lg">⠿</span>}
+                        {isAdmin && !filterLevel && !setSearch && <span className="text-gray-300 cursor-grab active:cursor-grabbing text-lg">⠿</span>}
                         <div className={`w-5 h-5 rounded flex items-center justify-center flex-shrink-0 ${isSelected ? 'bg-emerald-500' : 'border-2 border-gray-300'}`}>
                           {isSelected && <span className="text-white text-xs">✓</span>}
                         </div>
@@ -438,11 +507,16 @@ function QuizPage() {
                         </>}
                       </div>
                     );
-                  })}
+                  })
+                  )}
                 </div>
                 {selectedSetIds.length > 0 && (
                   <p className="text-emerald-600 text-sm text-center">
-                    {selectedSetIds.length} set đã chọn — {mergedCount} từ (sau khi loại trùng)
+                    {selectedSetIds.length} set đã chọn — <strong>{uniqueCount}</strong> từ
+                    {someFilteredSelected && !allFilteredSelected && filterLevel
+                      ? ` · đang xem ${filterLevel}`
+                      : ''}
+                    {' '}(đã loại trùng kanji)
                   </p>
                 )}
               </>
@@ -506,10 +580,21 @@ function QuizPage() {
             <input
               type="number"
               value={questionCount}
-              onChange={(e) => setQuestionCount(Math.max(1, parseInt(e.target.value) || 1))}
+              onChange={(e) =>
+                setQuestionCount(Math.max(1, Math.min(poolSize, parseInt(e.target.value) || 1)))
+              }
               min={1}
+              max={poolSize}
               className="w-20 text-center border border-gray-200 rounded-lg p-2 text-sm"
             />
+            <span className="text-xs text-gray-400">/ {poolSize}</span>
+            <button
+              type="button"
+              onClick={() => setQuestionCount(poolSize)}
+              className="text-xs px-2.5 py-1.5 rounded-lg font-medium bg-emerald-500 text-white hover:bg-emerald-600 transition-all"
+            >
+              Tất cả
+            </button>
           </div>
           <div className="flex gap-2">
             <button onClick={() => setQuizStyle('test')} className={`px-4 py-2 rounded-xl text-sm font-medium transition-all ${quizStyle === 'test' ? 'bg-emerald-500 text-white shadow-sm' : 'bg-gray-100 text-gray-600 hover:bg-gray-200'}`}>
@@ -560,6 +645,19 @@ function QuizPage() {
 
     return (
       <div className="min-h-screen flex flex-col items-center justify-center gap-6 p-4 pb-24">
+        <div className="w-full max-w-lg flex justify-start">
+          <button
+            type="button"
+            onClick={() => {
+              setShowImportConfig(true);
+              setSubmitted(false);
+              setFinished(false);
+            }}
+            className="text-sm text-gray-500 hover:text-indigo-500 transition-colors"
+          >
+            ← Quay lại
+          </button>
+        </div>
         {/* Progress bar */}
         <div className="w-full max-w-lg">
           <div className="flex justify-between text-gray-500 text-sm mb-1">
@@ -733,6 +831,19 @@ function QuizPage() {
 
     return (
       <div className="min-h-screen flex flex-col items-center justify-center gap-6 p-4 pb-24">
+        <div className="w-full max-w-lg flex justify-start">
+          <button
+            type="button"
+            onClick={() => {
+              setShowImportConfig(true);
+              setFinished(false);
+              setSubmitted(false);
+            }}
+            className="text-sm text-gray-500 hover:text-indigo-500 transition-colors"
+          >
+            ← Quay lại
+          </button>
+        </div>
         <div className="w-full max-w-lg flex justify-between text-gray-500 text-sm">
           <span className="font-medium">📥 Import</span>
           <span>Câu {current + 1}/{questions.length}</span>
