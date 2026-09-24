@@ -64,8 +64,8 @@ export default function N3FlashcardPage() {
           <p className="text-sm text-gray-500 mb-6 font-medium">{currentIndex + 1} / {cards.length} thẻ</p>
           <FlashCard key={cards[currentIndex].id} front={cards[currentIndex].kanji} reading={cards[currentIndex].hiragana} meaning={cards[currentIndex].meaning} />
           <div className="flex items-center gap-3 mt-7">
-            <button type="button" onClick={() => setCurrentIndex(Math.max(0, currentIndex - 1))} disabled={currentIndex === 0} className="px-5 py-2.5 rounded-xl border border-gray-200 bg-white text-gray-700 font-semibold shadow-sm hover:bg-gray-50 disabled:opacity-40 disabled:cursor-not-allowed">← Previous</button>
-            <button type="button" onClick={() => setCurrentIndex(Math.min(cards.length - 1, currentIndex + 1))} disabled={currentIndex === cards.length - 1} className="px-5 py-2.5 rounded-xl bg-indigo-500 text-white font-semibold shadow-sm hover:bg-indigo-600 disabled:opacity-40 disabled:cursor-not-allowed">Next →</button>
+            <button type="button" onClick={() => setCurrentIndex(Math.max(0, currentIndex - 1))} disabled={currentIndex === 0} className="h-11 w-11 rounded-xl border border-gray-200 bg-white text-gray-700 text-xl font-semibold shadow-sm hover:bg-gray-50 disabled:opacity-40 disabled:cursor-not-allowed" aria-label="Thẻ trước">←</button>
+            <button type="button" onClick={() => setCurrentIndex(Math.min(cards.length - 1, currentIndex + 1))} disabled={currentIndex === cards.length - 1} className="h-11 w-11 rounded-xl bg-indigo-500 text-white text-xl font-semibold shadow-sm hover:bg-indigo-600 disabled:opacity-40 disabled:cursor-not-allowed" aria-label="Thẻ tiếp theo">→</button>
           </div>
           <p className="text-xs text-gray-400 mt-4">Bấm vào thẻ để lật xem hiragana và nghĩa</p>
         </>
