@@ -218,29 +218,36 @@ export default function SessionKanjiPage() {
     }
   }, [isAdmin]);
 
-  // Keyboard: flashcard mode only
+  // Keyboard: flashcard mode only (Space = flip; arrows = prev/next)
   useEffect(() => {
     if (mode !== 'flashcard' || managing || loading || cards.length === 0) return;
     const handler = (e: KeyboardEvent) => {
-      const tag = (e.target as HTMLElement).tagName;
-      if (tag === 'INPUT' || tag === 'TEXTAREA' || (e.target as HTMLElement).isContentEditable) return;
-      if (e.code === 'Space') {
+      const el = e.target as HTMLElement;
+      const tag = el.tagName;
+      if (tag === 'INPUT' || tag === 'TEXTAREA' || el.isContentEditable) return;
+      // Space: flip card (global — works even when focus is on toolbar buttons)
+      if (e.code === 'Space' || e.key === ' ') {
         e.preventDefault();
+        e.stopPropagation();
         setFlipped((f) => !f);
+        return;
       }
       if (e.code === 'ArrowLeft') {
+        e.preventDefault();
         setFlipped(false);
         setEditingMnemonic(false);
         setIndex((i) => (i - 1 + cards.length) % cards.length);
       }
       if (e.code === 'ArrowRight') {
+        e.preventDefault();
         setFlipped(false);
         setEditingMnemonic(false);
         setIndex((i) => (i + 1) % cards.length);
       }
     };
-    window.addEventListener('keydown', handler);
-    return () => window.removeEventListener('keydown', handler);
+    // capture: true so Space flips before a focused <button> activates
+    window.addEventListener('keydown', handler, true);
+    return () => window.removeEventListener('keydown', handler, true);
   }, [mode, managing, loading, cards.length]);
 
   useEffect(() => {
@@ -1158,12 +1165,14 @@ export default function SessionKanjiPage() {
             transform: flipped ? 'rotateY(180deg)' : 'rotateY(0deg)',
           }}
         >
-          {/* Front — kanji only */}
+          {/* Front — kanji only (Space handled globally in keydown effect) */}
           <div
             role="button"
             tabIndex={0}
             onKeyDown={(e) => {
-              if (e.key === 'Enter' || e.key === ' ') {
+              // Enter only — Space is handled once by the window capture listener
+              // to avoid double-toggle when the card has focus
+              if (e.key === 'Enter') {
                 e.preventDefault();
                 setFlipped((f) => !f);
               }
@@ -1180,7 +1189,7 @@ export default function SessionKanjiPage() {
             <span className="text-8xl sm:text-9xl md:text-[10rem] font-bold text-white leading-none tracking-wide">
               {card.kanji || '？'}
             </span>
-            <p className="text-sm sm:text-base text-white/50">Chạm để lật</p>
+            <p className="text-sm sm:text-base text-white/50">Chạm hoặc Space để lật</p>
           </div>
 
           {/* Back */}

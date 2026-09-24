@@ -10,8 +10,10 @@ import { katakana } from '../../data/katakana';
 import { vocabLessons1to10 } from '../../data/vocabulary/lessons-1-10';
 import { vocabLessons11to25 } from '../../data/vocabulary/lessons-11-25';
 import { grammar } from '../../data/grammar';
+import { kanjiN5 } from '../../data/kanji';
+import { kanjiN4, kanjiN4Part2 } from '../../data/kanji-n4';
 
-type QuizMode = 'Kana' | 'Vocabulary' | 'Grammar' | 'Import';
+type QuizMode = 'Kana' | 'Kanji' | 'Vocabulary' | 'Grammar' | 'Import';
 type QuizStyle = 'instant' | 'test';
 type Question = { question: string; options: string[]; correctIndex: number };
 type ImportItem = { kanji: string; meaning: string };
@@ -36,6 +38,17 @@ function generateQuestions(mode: QuizMode, count = 10): Question[] {
       return { question: item.character, options, correctIndex: options.indexOf(item.romaji) };
     });
   }
+  if (mode === 'Kanji') {
+    const pool = shuffle([...kanjiN5, ...kanjiN4, ...kanjiN4Part2]);
+    return pool.slice(0, count).map((item) => {
+      const wrong = shuffle(pool.filter((k) => k.meaning !== item.meaning))
+        .slice(0, 3)
+        .map((k) => k.meaning);
+      const options = shuffle([item.meaning, ...wrong]);
+      return { question: item.character, options, correctIndex: options.indexOf(item.meaning) };
+    });
+  }
+
   if (mode === 'Vocabulary') {
     const pool = shuffle([...vocabLessons1to10, ...vocabLessons11to25]);
     return pool.slice(0, count).map((item) => {
@@ -155,12 +168,20 @@ function QuizPage() {
       const parsed = JSON.parse(importJson);
       if (!Array.isArray(parsed)) return { error: 'JSON phải là một mảng' };
       if (parsed.length === 0) return { error: 'Mảng rỗng' };
-      for (const item of parsed) {
-        if (!item.kanji || !item.meaning) return { error: 'Mỗi mục phải có "kanji" và "meaning"' };
+      const items: ImportItem[] = [];
+      for (let i = 0; i < parsed.length; i++) {
+        const item = parsed[i] as { kanji?: unknown; meaning?: unknown };
+        const kanji = typeof item?.kanji === 'string' ? item.kanji.trim() : '';
+        const meaning = typeof item?.meaning === 'string' ? item.meaning.trim() : '';
+        if (!kanji || !meaning) {
+          return { error: `Mục #${i + 1} phải có "kanji" và "meaning" (chuỗi không rỗng)` };
+        }
+        items.push({ kanji, meaning });
       }
-      return { items: parsed as ImportItem[] };
-    } catch {
-      return { error: 'JSON không hợp lệ' };
+      return { items };
+    } catch (e) {
+      const detail = e instanceof Error ? e.message : '';
+      return { error: detail ? `JSON không hợp lệ: ${detail}` : 'JSON không hợp lệ' };
     }
   })();
 
@@ -182,12 +203,17 @@ function QuizPage() {
     }).catch(() => {});
   }, [showImportConfig]);
 
-  // Auto-open import mode from URL
+  // Auto-open a quiz mode from URL
   const searchParams = useSearchParams();
   useEffect(() => {
-    if (searchParams.get('mode') === 'import') {
+    const requestedMode = searchParams.get('mode');
+    if (requestedMode === 'import') {
+      // URL mode is an external navigation input; sync it into the quiz state.
+      // eslint-disable-next-line react-hooks/set-state-in-effect
       setMode('Import');
       setShowImportConfig(true);
+    } else if (requestedMode === 'kanji' || requestedMode === 'vocabulary') {
+      startQuiz(requestedMode === 'kanji' ? 'Kanji' : 'Vocabulary');
     }
   }, [searchParams]);
 
@@ -316,7 +342,7 @@ function QuizPage() {
         <h1 className="text-4xl font-bold text-gray-800">⚡ Quiz</h1>
         <p className="text-gray-500">Chọn chế độ kiểm tra</p>
         <div className="flex gap-4 flex-wrap justify-center">
-          {([['Kana', 'from-pink-400 to-rose-500'], ['Vocabulary', 'from-sky-400 to-blue-500'], ['Grammar', 'from-violet-400 to-purple-500'], ['Import', 'from-emerald-400 to-teal-500']] as [QuizMode, string][]).map(([m, color]) => (
+          {([['Kana', 'from-pink-400 to-rose-500'], ['Kanji', 'from-indigo-400 to-purple-500'], ['Vocabulary', 'from-sky-400 to-blue-500'], ['Grammar', 'from-violet-400 to-purple-500'], ['Import', 'from-emerald-400 to-teal-500']] as [QuizMode, string][]).map(([m, color]) => (
             <button
               key={m}
               onClick={() => {
@@ -547,20 +573,36 @@ function QuizPage() {
                 Hủy
               </button>
               <button onClick={async () => {
+                let parsed: unknown;
                 try {
-                  const parsed = JSON.parse(editJson);
-                  if (!Array.isArray(parsed)) return alert('JSON phải là một mảng');
-                  for (const item of parsed) {
-                    if (!item.kanji || !item.meaning) return alert('Mỗi mục phải có "kanji" và "meaning"');
+                  parsed = JSON.parse(editJson);
+                } catch (e) {
+                  const detail = e instanceof Error ? e.message : '';
+                  alert(detail ? `JSON không hợp lệ: ${detail}` : 'JSON không hợp lệ');
+                  return;
+                }
+                if (!Array.isArray(parsed)) return alert('JSON phải là một mảng');
+                if (parsed.length === 0) return alert('Mảng rỗng');
+                const items: ImportItem[] = [];
+                for (let i = 0; i < parsed.length; i++) {
+                  const item = parsed[i] as { kanji?: unknown; meaning?: unknown };
+                  const kanji = typeof item?.kanji === 'string' ? item.kanji.trim() : '';
+                  const meaning = typeof item?.meaning === 'string' ? item.meaning.trim() : '';
+                  if (!kanji || !meaning) {
+                    return alert(`Mục #${i + 1} phải có "kanji" và "meaning" (chuỗi không rỗng)`);
                   }
-                  if (!editSetName.trim()) return alert('Tên quiz không được để trống');
-                  setEditSaveStatus('saving');
-                  const updated = await updateQuizSet(editSetId, editSetName.trim(), parsed);
+                  items.push({ kanji, meaning });
+                }
+                if (!editSetName.trim()) return alert('Tên quiz không được để trống');
+                setEditSaveStatus('saving');
+                try {
+                  const updated = await updateQuizSet(editSetId, editSetName.trim(), items);
                   setSavedSets((prev) => prev.map((s) => s.id === editSetId ? updated : s));
                   setEditSaveStatus('saved');
                   setTimeout(() => { setEditSetId(null); setEditSaveStatus('idle'); }, 1000);
-                } catch {
-                  alert('JSON không hợp lệ');
+                } catch (e) {
+                  const msg = e instanceof Error ? e.message : 'Lỗi không xác định';
+                  alert(`Không lưu được: ${msg}`);
                   setEditSaveStatus('idle');
                 }
               }}

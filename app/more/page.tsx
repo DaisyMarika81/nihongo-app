@@ -8,6 +8,8 @@ const features = [
   { href: '/practice', icon: '🎯', title: 'Luyện tập', desc: 'Luyện tập các dạng bài' },
   { href: '/kanji', icon: '🈁', title: 'Kanji', desc: 'Tra cứu và học kanji' },
   { href: '/quiz', icon: '✍️', title: 'Quiz', desc: 'Trắc nghiệm kiến thức' },
+  { href: '/import-flashcards', icon: '📥', title: 'Import flashcard', desc: 'Thêm Kanji và từ vựng bằng JSON' },
+  { href: '/n3-flashcard', icon: '🈁', title: 'Luyện N3 flashcard', desc: 'Ôn riêng các thẻ đã import' },
 ];
 
 export default function MorePage() {

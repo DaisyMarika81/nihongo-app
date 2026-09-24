@@ -22,21 +22,30 @@ export async function saveQuizSet(name: string, items: QuizSetItem[]): Promise<Q
   const { data, error } = await supabase
     .from('quiz_sets')
     .insert({ name, items })
-    .select()
-    .single();
-  if (error) throw error;
-  return data as QuizSet;
+    .select('id, name, items, created_at');
+  if (error) throw new Error(error.message || 'Không lưu được quiz set');
+  if (!data?.length) {
+    throw new Error(
+      'Insert 0 dòng — bảng quiz_sets có thể bị RLS chặn INSERT. Chạy file supabase-quiz-sets.sql trong Supabase SQL Editor.'
+    );
+  }
+  return data[0] as QuizSet;
 }
 
 export async function updateQuizSet(id: string, name: string, items: QuizSetItem[]): Promise<QuizSet> {
+  // Avoid .single() — 0 rows (RLS/no match) becomes a clearer app error than PostgREST coerce message
   const { data, error } = await supabase
     .from('quiz_sets')
     .update({ name, items })
     .eq('id', id)
-    .select()
-    .single();
-  if (error) throw error;
-  return data as QuizSet;
+    .select('id, name, items, created_at');
+  if (error) throw new Error(error.message || 'Không cập nhật được quiz set');
+  if (!data?.length) {
+    throw new Error(
+      'Cập nhật 0 dòng — bảng quiz_sets có thể bị RLS chặn UPDATE. Chạy file supabase-quiz-sets.sql trong Supabase SQL Editor.'
+    );
+  }
+  return data[0] as QuizSet;
 }
 
 export async function deleteQuizSet(id: string): Promise<void> {

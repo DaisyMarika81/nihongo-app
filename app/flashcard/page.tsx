@@ -8,11 +8,13 @@ import { vocabLessons11to25 } from '@/data/vocabulary/lessons-11-25';
 import { vocabLessons26to40 } from '@/data/vocabulary/lessons-26-40';
 import { vocabLessons41to50 } from '@/data/vocabulary/lessons-41-50';
 import FlashCard from '@/app/components/FlashCard';
+import { ImportedFlashcard, loadImportedFlashcards } from '@/lib/imported-flashcards';
 
 const allVocab = [...vocabLessons1to10, ...vocabLessons11to25, ...vocabLessons26to40, ...vocabLessons41to50];
 
 export default function FlashcardPage() {
   const [dueCards, setDueCards] = useState<{ id: string; japanese: string; reading: string; meaning: string }[]>([]);
+  const [loading, setLoading] = useState(true);
   const [currentIndex, setCurrentIndex] = useState(0);
   const [sessionDone, setSessionDone] = useState(false);
 
@@ -33,7 +35,19 @@ export default function FlashcardPage() {
       const vocab = allVocab.find((v) => v.japanese === japanese);
       return { id: card.id, japanese: vocab?.japanese || japanese, reading: vocab?.reading || '', meaning: vocab?.meaning || '' };
     }).filter((c) => c.japanese);
-    setDueCards(mapped);
+    const imported = loadImportedFlashcards();
+    const importedCards = imported.map((card: ImportedFlashcard) => ({
+      id: card.id,
+      japanese: card.kanji,
+      reading: card.hiragana,
+      meaning: card.meaning,
+    }));
+    importedCards.forEach((card) => { p = learnCard(p, card.id); });
+    saveProgress(p);
+    window.setTimeout(() => {
+      setDueCards([...mapped, ...importedCards].slice(0, 20));
+      setLoading(false);
+    }, 0);
   }, []);
 
   const handleRate = (result: ReviewResult) => {
@@ -43,6 +57,10 @@ export default function FlashcardPage() {
     if (currentIndex + 1 >= dueCards.length) setSessionDone(true);
     else setCurrentIndex((i) => i + 1);
   };
+
+  if (loading) {
+    return <div className="flex items-center justify-center min-h-[70vh] text-gray-400">Đang tải flashcard...</div>;
+  }
 
   if (dueCards.length === 0) {
     return (

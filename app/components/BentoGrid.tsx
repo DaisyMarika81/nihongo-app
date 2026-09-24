@@ -23,6 +23,16 @@ export default function BentoGrid({
             Buổi {currentSession}
           </span>
         </Link>
+        <Link href="/quiz?mode=kanji" className={tile}>
+          <span className="text-3xl mb-2" aria-hidden>🈁</span>
+          <span className="text-sm font-semibold text-gray-700 dark:text-gray-200 text-center">Test Kanji</span>
+          <span className="text-xs mt-1 text-gray-400">Riêng Kanji</span>
+        </Link>
+        <Link href="/quiz?mode=vocabulary" className={tile}>
+          <span className="text-3xl mb-2" aria-hidden>📝</span>
+          <span className="text-sm font-semibold text-gray-700 dark:text-gray-200 text-center">Test từ vựng</span>
+          <span className="text-xs mt-1 text-gray-400">Riêng từ vựng</span>
+        </Link>
         <Link href="/review/jlpt" className={tile}>
           <span className="text-3xl mb-2" aria-hidden>
             🈁
@@ -41,6 +51,13 @@ export default function BentoGrid({
             📝
           </span>
           <span className="text-sm font-semibold text-gray-700 dark:text-gray-200 text-center">Quiz Từ vựng</span>
+        </Link>
+        <Link href="/n3-flashcard" className={tile}>
+          <span className="text-3xl mb-2" aria-hidden>
+            🈁
+          </span>
+          <span className="text-sm font-semibold text-gray-700 dark:text-gray-200 text-center">Luyện N3 flashcard</span>
+          <span className="text-xs mt-1 text-gray-400">Thẻ đã import</span>
         </Link>
         {!restrictUser && (
           <>
